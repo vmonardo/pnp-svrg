@@ -18,8 +18,7 @@ Net(DnCNN(
     (5): BatchNorm2d(64, eps=64, momentum=0.1, affine=True, track_running_stats=True)
   )
 ))
-TrainSet(FlickrSet(mode=train, sigma=0.03))
-ValSet(FlickrSet(mode=test, sigma=0.03))
+TrainSigma(0.03)
 Optimizer(Adam (
 Parameter Group 0
     amsgrad: False
