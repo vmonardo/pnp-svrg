@@ -1,23 +1,18 @@
 from imports import *
 
-def svrg(img_path, denoiser, eta, T1, T2, batch_size):
-    d = process_img(img_path) 
-
+def pnp_svrg(d, denoiser, denoise_params, eta, T1, T2, mini_batch_size, verbose=True):
+    # Initialize logging variables
     time_per_iter = []
     psnr_per_iter = []
     
-    '''
-    PnP SVRG routine
-    '''
-
+    # Main PnP-SVRG routine
     z = d['noisy']
-
     zs = [z]
 
     # outer loop
     for i in range(T1):
         # Gradient at reference point
-        mu = full_grad(z, d['mask'], d['y'])# / np.count_nonzero(d['mask']) 
+        mu = full_grad(z, d['mask'], d['y'])
 
         w = np.copy(z) # Initialize reference point
 
@@ -27,53 +22,163 @@ def svrg(img_path, denoiser, eta, T1, T2, batch_size):
         for j in range(T2):
 
             # Get batch index(indices) in terms of (row, col)
-            ind = get_batch(batch_size, d['mask']) 
+            ind = get_batch(mini_batch_size, d['mask'])
+
+            # start timing
+            start_inner = time.time()
 
             # calculate stochastic variance-reduced gradient
-            v = stoch_grad(z, ind, d['y']) / batch_size - stoch_grad(w, ind, d['y']) / batch_size + mu
+            v = stoch_grad(z, ind, d['y']) / mini_batch_size - stoch_grad(w, ind, d['y']) / mini_batch_size + mu
             
             # take gradient step
             z = z - eta*v
 
-            '''
-            NORMALIZE
-            '''
-            # z_min = np.min(z)
-            # z_max = np.max(z)
-            #z = (z - z_min)/(z_max - z_min)
-
+            # Denoise
             if isinstance(denoiser, str) and denoiser == 'nlm':
-                z = denoise_nl_means(z, h=0.015, fast_mode=True, **d['patch'])
+                z = denoise_nl_means(z, h=denoise_params['filter'], **denoise_params['patch'])
             elif isinstance(denoiser, Denoiser):
-                '''
-                SCALE
-                '''
-                #scale_range = 1.0 + denoiser.sigma/255.0/2.0
-                #scale_shift = (1 - scale_range)/2.0
-                #z = z * scale_range + scale_shift
-                
                 out = denoiser(torch.Tensor(z)[None][None]).squeeze().detach().cpu().numpy()
                 z -= out
-
-                '''
-                UN-SCALE + UN-NORMALIZE
-                '''
-                #z = (z - scale_shift)/scale_range
-                #z = z * (z_max - z_min) + z_min
-                
             zs.append(z)
 
-            print("After denoising: " + str(i) + " " + str(j) + " " + str(peak_signal_noise_ratio(d['original'], z)))
+            # stop timing
+            stop_inner = time.time()
+            time_per_iter.append(stop_inner - start_inner)
+            psnr_per_iter.append(peak_signal_noise_ratio(d['original'], z))
 
-        # calculate time difference and PSNR
-        time_per_iter.append(time.time() - start_iter)
-        psnr_per_iter.append(peak_signal_noise_ratio(d['original'], z))
-    
+            if verbose:
+                print(str(i) + " " + str(j) + " " + str(peak_signal_noise_ratio(d['original'], z)))
+
     # output denoised image, time stats, psnr stats
     return z, time_per_iter, psnr_per_iter, zs
 
-        
-        
+
+def pnp_gd(d, denoiser, eta, T, verbose=True):
+    # Initialize logging variables
+    time_per_iter = []
+    psnr_per_iter = []
+    t1 = 0
+
+    # Main PnP GD routine
+    z = d['noisy']
+    zs = [z]
+
+    for i in range(T):
+        start_iter = time.time()
+
+        # Gradient Update
+        v = full_grad(z, d['mask'], d['y'])
+        z = z - eta * v
+
+        psnr_per_iter.append(peak_signal_noise_ratio(orig, z))
+
+        print("After gradient: " + str(i) + " " + str(j) + " " + str(peak_signal_noise_ratio(d['original'], z)))
+
+        # Denoising
+        if isinstance(denoiser, str) and denoiser == 'nlm':
+            z = denoise_nl_means(z, h=denoise_params['filter'], **denoise_params['patch'])
+        elif isinstance(denoiser, Denoiser):
+            out = denoiser(torch.Tensor(z)[None][None]).squeeze().detach().cpu().numpy()
+            z -= out
+        zs.append(z)
+
+        # Log timing
+        stop_iter = time.time()
+        time_per_iter.append(stop_iter - start_iter)
+
+        psnr_per_iter.append(peak_signal_noise_ratio(d['original'], z))
+
+        if verbose:
+            # Display PSNR at each iteration
+            print(str(i) + " " + str(j) + " " + str(peak_signal_noise_ratio(d['original'], z)))
+        t1 += 1
+    return z, time_per_iter, psnr_per_iter, zs
+
+
+def pnp_sgd(d, denoiser, eta, T, mini_batch_size, verbose=True):
+    # Initialize logging variables
+    time_per_iter = []
+    psnr_per_iter = []
+    t2 = 0
+
+    # Main PnP SGD routine
+    z = d['noisy']
+    zs = [z]
+
+    for i in range(T):
+        # Update variables
+        ind = get_batch(mini_batch_size, d['mask'])
+
+        # start timing
+        start_iter = time.time()
+        v = stoch_grad(z, d['mask'], d['y'], ind)
+        z = z - eta * v
+
+        # Denoising
+        if isinstance(denoiser, str) and denoiser == 'nlm':
+            z = denoise_nl_means(z, h=denoise_params['filter'], **denoise_params['patch'])
+        elif isinstance(denoiser, Denoiser):
+            out = denoiser(torch.Tensor(z)[None][None]).squeeze().detach().cpu().numpy()
+            z -= out
+        zs.append(z)
+
+        # end timing
+        stop_iter = time.time()
+        time_per_iter.append(stop_iter - start_iter)
+        psnr_per_iter.append(peak_signal_noise_ratio(d['original'], z))
+
+        if verbose:
+            print(str(i) + " " + str(j) + " " + str(peak_signal_noise_ratio(d['original'], z)))
+        t2 += 1
+    return z, time_per_iter, psnr_per_iter, zs
+
+
+def pnp_lsvrg(d, denoiser, eta, T, mini_batch_size, verbose=True):
+    # Initialize logging variables
+    time_per_iter = []
+    psnr_per_iter = []
+    t4 = 0
+
+    # Main PnP SVRG routine
+    z = d['noisy']
+    zs = [z]
+
+    w = np.copy(z)
+    for i in range(T):
+        # outer loop
+        mu = full_grad(z, d['mask'], d['y'])  # Average gradient
+
+        # inner loop
+        ind = get_batch(mini_batch_size, d['mask'])   # Get batch index(indices) in terms of (row, col)
+
+        # start timing
+        start_iter = time.time()
+
+        v = stoch_grad(z, ind, d['y']) / mini_batch_size - stoch_grad(w, ind, d['y']) / mini_batch_size + mu
+        z = z - eta * v
+
+        # Denoising
+        if isinstance(denoiser, str) and denoiser == 'nlm':
+            z = denoise_nl_means(z, h=denoise_params['filter'], **denoise_params['patch'])
+        elif isinstance(denoiser, Denoiser):
+            out = denoiser(torch.Tensor(z)[None][None]).squeeze().detach().cpu().numpy()
+            z -= out
+        zs.append(z)
+
+        # update reference point with probability 1-p
+        if np.random.random() > p:
+            w = np.copy(z)
+
+        # end timing
+        stop_iter = time.time()
+        time_per_iter.append(stop_iter - start_iter)
+
+        if verbose:
+            print(str(i) + " " + str(j) + " " + str(peak_signal_noise_ratio(d['original'], z)))
+
+        psnr_per_iter.append(peak_signal_noise_ratio(d['original'], z))
+        t4 += 1
+    return z, time_per_iter, psnr_per_iter, zs
        
 
 
