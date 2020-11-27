@@ -53,7 +53,7 @@ def pnp_svrg(d, denoiser, denoise_params, eta, T1, T2, mini_batch_size, verbose=
     return z, time_per_iter, psnr_per_iter, zs
 
 
-def pnp_gd(d, denoiser, eta, T, verbose=True):
+def pnp_gd(d, denoiser, denoise_params, eta, T, verbose=True):
     # Initialize logging variables
     time_per_iter = []
     psnr_per_iter = []
@@ -95,7 +95,7 @@ def pnp_gd(d, denoiser, eta, T, verbose=True):
     return z, time_per_iter, psnr_per_iter, zs
 
 
-def pnp_sgd(d, denoiser, eta, T, mini_batch_size, verbose=True):
+def pnp_sgd(d, denoiser, denoise_params, eta, T, mini_batch_size, verbose=True):
     # Initialize logging variables
     time_per_iter = []
     psnr_per_iter = []
@@ -133,7 +133,7 @@ def pnp_sgd(d, denoiser, eta, T, mini_batch_size, verbose=True):
     return z, time_per_iter, psnr_per_iter, zs
 
 
-def pnp_lsvrg(d, denoiser, eta, T, mini_batch_size, verbose=True):
+def pnp_lsvrg(d, denoiser, denoise_params, eta, T, mini_batch_size, verbose=True):
     # Initialize logging variables
     time_per_iter = []
     psnr_per_iter = []
