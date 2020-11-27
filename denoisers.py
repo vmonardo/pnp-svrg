@@ -1,37 +1,5 @@
 from imports import *
 
-def process_img(img_path, sample_prob=0.5):
-    original = np.array(Image.open(img_path).resize((256,256))) 
-    original = (original - np.min(original))/(np.max(original) - np.min(original))
-
-    # add noise
-    H, W = original.shape[:2] 
-    N = H*W 
-    sigma = 1.0
-
-    np.random.seed(0)
-    mask = np.random.choice([0, 1], size=(H,W), p=[1 - sample_prob, sample_prob])
-    indices = np.transpose(np.nonzero(mask))
-    np.random.seed(0)
-    noises = np.random.normal(0, sigma, (H,W))
-    forig = np.fft.fft2(original)
-    y0 = forig + noises
-    y = np.multiply(mask, y0)
-    x_init = np.absolute(np.fft.ifft2(y))
-    #noisy = (x_init - np.min(x_init)) / (np.max(x_init) - np.min(x_init))
-    noisy = x_init
-
-    patch = dict(patch_size=5, patch_distance=6, multichannel=True)
-
-    return {'noisy' : noisy,
-            'mask' : mask,
-            'y' : y,
-            'patch' : patch,
-            'original' : original, 
-            'H' : H,
-            'W' : W,
-            'indices' : indices}
-
 def svrg(img_path, denoiser, eta, T1, T2, batch_size):
     d = process_img(img_path) 
 

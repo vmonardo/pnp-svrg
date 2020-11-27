@@ -86,3 +86,33 @@ def gif(images):
     anim = FuncAnimation(fig, animate, init_func=init, frames=range(len(images)), interval=40)
 
     return HTML(anim.to_html5_video())
+
+def generate_mask(height, width, sample_prob):
+    mask = np.random.choice([0, 1], size=(H, W), p=[1 - sample_prob, sample_prob])
+    indices = np.transpose(np.nonzero(mask))
+    return mask
+
+def create_problem(img_path, sample_prob=0.5, sigma=1.0, mask_):
+    original = np.array(Image.open(img_path).resize((256, 256)))
+    original = (original - np.min(original)) / (np.max(original) - np.min(original))
+    H, W = original.shape[:2]
+
+    forig = np.fft.fft2(original)
+    noises = np.random.normal(0, sigma, (H, W))
+
+    y0 = forig + noises
+    y = np.multiply(mask_, y0)
+
+    x_init = np.absolute(np.fft.ifft2(y))
+    # noisy = (x_init - np.min(x_init)) / (np.max(x_init) - np.min(x_init))
+    return {'noisy': noisy,
+            'mask': mask_,
+            'y': y,
+            'original': original,
+            'H': H,
+            'W': W,
+            'indices': np.transpose(np.nonzero(mask_))}
+
+def nlm_config(filter_size_=0.015, patch_size_=5, patch_distance_=6, multichannel_=True):
+    return {'filter': filter_size_,
+            'patch': dict(patch_size=patch_size_, patch_distance=patch_distance_, multichannel=multichannel_)}
