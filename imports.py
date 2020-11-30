@@ -29,4 +29,4 @@ from skimage.util import random_noise
 from spectral import *
 from utils import *
 from cnn import *
-from denoisers import *
+from algorithms import *
