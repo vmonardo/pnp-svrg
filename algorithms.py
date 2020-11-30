@@ -70,9 +70,7 @@ def pnp_gd(d, denoiser, denoise_params, eta, T, verbose=True):
         v = full_grad(z, d['mask'], d['y'])
         z = z - eta * v
 
-        psnr_per_iter.append(peak_signal_noise_ratio(orig, z))
-
-        print("After gradient: " + str(i) + " " + str(j) + " " + str(peak_signal_noise_ratio(d['original'], z)))
+        # print("After gradient: " + str(i) + " " + str(j) + " " + str(peak_signal_noise_ratio(d['original'], z)))
 
         # Denoising
         if isinstance(denoiser, str) and denoiser == 'nlm':
@@ -111,7 +109,7 @@ def pnp_sgd(d, denoiser, denoise_params, eta, T, mini_batch_size, verbose=True):
 
         # start timing
         start_iter = time.time()
-        v = stoch_grad(z, d['mask'], d['y'], ind)
+        v = stoch_grad(z, ind, d['y'])
         z = z - eta * v
 
         # Denoising
@@ -133,7 +131,7 @@ def pnp_sgd(d, denoiser, denoise_params, eta, T, mini_batch_size, verbose=True):
     return z, time_per_iter, psnr_per_iter, zs
 
 
-def pnp_lsvrg(d, denoiser, denoise_params, eta, T, mini_batch_size, verbose=True):
+def pnp_lsvrg(d, denoiser, denoise_params, eta, T, mini_batch_size, prob_update=0.1, verbose=True):
     # Initialize logging variables
     time_per_iter = []
     psnr_per_iter = []
@@ -165,8 +163,8 @@ def pnp_lsvrg(d, denoiser, denoise_params, eta, T, mini_batch_size, verbose=True
             z -= out
         zs.append(z)
 
-        # update reference point with probability 1-p
-        if np.random.random() > p:
+        # update reference point with probability prob_update
+        if np.random.random() < prob_update:
             w = np.copy(z)
 
         # end timing
