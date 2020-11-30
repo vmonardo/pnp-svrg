@@ -18,6 +18,7 @@ from itertools import product
 import multiprocessing as MP
 import tqdm
 import copy
+import bm3d
 from matplotlib.animation import FuncAnimation
 from IPython.display import HTML
 
@@ -26,7 +27,11 @@ from skimage.restoration import denoise_nl_means, estimate_sigma
 from skimage.metrics import peak_signal_noise_ratio
 from skimage.util import random_noise
 
+from skimage.restoration import (denoise_tv_chambolle, denoise_bilateral,
+                                 denoise_wavelet, estimate_sigma)
+
 from spectral import *
 from utils import *
 from cnn import *
 from algorithms import *
+from denoisers import *

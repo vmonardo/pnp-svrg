@@ -42,7 +42,7 @@ def full_grad(z, MASK, meas):
     res = np.fft.fft2(z) * MASK
     index = np.nonzero(MASK)
     res[index] = res[index] - meas[index]
-    return np.real(np.fft.ifft2(res))
+    return np.real(np.fft.ifft2(res)) / np.count_nonzero(d['mask'])
 
 
 def stoch_grad(z, IND, meas):
@@ -55,7 +55,7 @@ def stoch_grad(z, IND, meas):
     # H, W = z.shape[:2]
     # batch gradient update
     res = IND * (np.fft.fft2(z) - meas)
-    return np.real(np.fft.ifft2(res))
+    return np.real(np.fft.ifft2(res)) / np.count_nonzero(IND)
 
 
 def get_batch(B, MASK):

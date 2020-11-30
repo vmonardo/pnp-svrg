@@ -28,7 +28,7 @@ def pnp_svrg(d, denoiser, denoise_params, eta, T1, T2, mini_batch_size, verbose=
             start_inner = time.time()
 
             # calculate stochastic variance-reduced gradient
-            v = stoch_grad(z, ind, d['y']) / mini_batch_size - stoch_grad(w, ind, d['y']) / mini_batch_size + mu
+            v = stoch_grad(z, ind, d['y']) - stoch_grad(w, ind, d['y']) + mu
             
             # take gradient step
             z = z - eta*v
