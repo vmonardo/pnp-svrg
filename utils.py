@@ -88,11 +88,11 @@ def gif(images):
     return HTML(anim.to_html5_video())
 
 def generate_mask(height=256, width=256, sample_prob=.5):
-    mask = np.random.choice([0, 1], size=(H, W), p=[1 - sample_prob, sample_prob])
+    mask = np.random.choice([0, 1], size=(height, width), p=[1 - sample_prob, sample_prob])
     indices = np.transpose(np.nonzero(mask))
     return mask
 
-def create_problem(img_path='/data', sample_prob=0.5, sigma=1.0, mask_=np.array(0)):
+def create_problem(img_path='/data', sigma=1.0, mask_=np.array(0)):
     original = np.array(Image.open(img_path).resize((256, 256)))
     original = (original - np.min(original)) / (np.max(original) - np.min(original))
     H, W = original.shape[:2]
