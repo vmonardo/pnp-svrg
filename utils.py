@@ -42,7 +42,7 @@ def full_grad(z, MASK, meas):
     res = np.fft.fft2(z) * MASK
     index = np.nonzero(MASK)
     res[index] = res[index] - meas[index]
-    return np.real(np.fft.ifft2(res)) / np.count_nonzero(d['mask'])
+    return np.real(np.fft.ifft2(res)) / np.count_nonzero(MASK)
 
 
 def stoch_grad(z, IND, meas):
