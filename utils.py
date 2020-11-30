@@ -105,7 +105,7 @@ def create_problem(img_path='/data', sigma=1.0, mask_=np.array(0)):
 
     x_init = np.absolute(np.fft.ifft2(y))
     # noisy = (x_init - np.min(x_init)) / (np.max(x_init) - np.min(x_init))
-    return {'noisy': noisy,
+    return {'noisy': x_init,
             'mask': mask_,
             'y': y,
             'original': original,
