@@ -18,7 +18,6 @@ from itertools import product
 import multiprocessing as MP
 import tqdm
 import copy
-import bm3d
 from matplotlib.animation import FuncAnimation
 from IPython.display import HTML
 import ffmpeg
@@ -27,6 +26,8 @@ from skimage import data, img_as_float
 from skimage.restoration import denoise_nl_means, denoise_wavelet
 from skimage.metrics import peak_signal_noise_ratio
 from skimage.util import random_noise
+
+from bm3d import bm3d
 
 from spectral import *
 from cnn import *
