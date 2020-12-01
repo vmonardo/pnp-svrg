@@ -10,13 +10,14 @@ def show_multiple(images, ax=plt):
         h = axes[i].imshow(image.squeeze(), cmap='gray')
     return h
 
-def show_grid(images, rows=3, cols=2, figsize=(7,3), ax=plt):
+def show_grid(images, titles, rows=3, cols=2, figsize=(7,3), ax=plt):
     fig, axes = ax.subplots(nrows=rows, ncols=cols, figsize=figsize)
 
     assert(len(axes.flatten()) == len(images))
 
-    for axis, image in zip(axes.flatten(), images):
+    for axis, image, title in zip(axes.flatten(), images, titles):
         image = (image - image.min())/(image.max() - image.min())
+        axis.set_title(title)
         h = axis.imshow(image.squeeze(), cmap='gray')
 
     fig.tight_layout()
