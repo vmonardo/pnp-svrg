@@ -9,13 +9,25 @@ def show_multiple(images, ax=plt):
         image = (image - image.min())/(image.max() - image.min())
         h = axes[i].imshow(image.squeeze(), cmap='gray')
     return h
+
+def show_grid(images, rows=3, cols=2, figsize=(7,3), ax=plt):
+    fig, axes = ax.subplots(nrows=rows, ncols=cols, figsize=figsize)
+
+    assert(len(axes.flatten()) == len(images))
+
+    for axis, image in zip(axes.flatten(), images):
+        image = (image - image.min())/(image.max() - image.min())
+        h = axis.imshow(image.squeeze(), cmap='gray')
+
+    fig.tight_layout()
+
+    return h
  
 def myimshow(image, ax=plt):
     image = image.cpu().detach().numpy()
     image = (image - image.min())/(image.max() - image.min())
     h = ax.imshow(image.squeeze(), cmap='gray')
     return h
-
 
 def psnr_display(img_path, output, title):
     ORIG = np.array(Image.open(img_path).resize((256,256))) / 255.0
@@ -87,32 +99,43 @@ def gif(images):
 
     return HTML(anim.to_html5_video())
 
-def generate_mask(height=256, width=256, sample_prob=.5):
-    mask = np.random.choice([0, 1], size=(height, width), p=[1 - sample_prob, sample_prob])
-    indices = np.transpose(np.nonzero(mask))
-    return mask
+def create_problem(img_path='./data/Set12/13.jpg', H=256, W=256, sample_prob=0.5, sigma=1.0,  # general params 
+                   filter_size=0.015, patch_size=5, patch_distance=6, multichannel=True,      # NLM params
+                   network_type='DnCNN', device='cpu',                                        # CNN params
+                   multia=True, rescale_sigma=True,                                           # TV params
+                   noise_est=0.015):                                                          # BM3D params
 
-def create_problem(img_path='/data', sigma=1.0, mask_=np.array(0)):
-    original = np.array(Image.open(img_path).resize((256, 256)))
+    original = np.array(Image.open(img_path).resize((H, W)))
     original = (original - np.min(original)) / (np.max(original) - np.min(original))
-    H, W = original.shape[:2]
+
+    np.random.seed(0)
+    mask = np.random.choice([0, 1], size=(H, W), p=[1 - sample_prob, sample_prob])
+    indices = np.transpose(np.nonzero(mask))
 
     forig = np.fft.fft2(original)
+    np.random.seed(0)
     noises = np.random.normal(0, sigma, (H, W))
 
     y0 = forig + noises
-    y = np.multiply(mask_, y0)
+    y = np.multiply(mask, y0)
 
     x_init = np.absolute(np.fft.ifft2(y))
-    # noisy = (x_init - np.min(x_init)) / (np.max(x_init) - np.min(x_init))
+    # x_init = (x_init - np.min(x_init)) / (np.max(x_init) - np.min(x_init))
+
+    cnn = Denoiser(net=eval(network_type)(17), 
+                   experiment_name='exp1_flickr30k_' + network_type, 
+                   data=False, sigma=30, batch_size=10).net.to(device)
+
     return {'noisy': x_init,
-            'mask': mask_,
+            'mask': mask,
             'y': y,
             'original': original,
             'H': H,
             'W': W,
-            'indices': np.transpose(np.nonzero(mask_))}
-
-def nlm_config(filter_size_=0.015, patch_size_=5, patch_distance_=6, multichannel_=True):
-    return {'filter': filter_size_,
-            'patch': dict(patch_size=patch_size_, patch_distance=patch_distance_, multichannel=multichannel_)}
+            'indices': indices,
+            'filter' : filter_size,
+            'patch' : dict(patch_size=patch_size, patch_distance=patch_distance, multichannel=multichannel),
+            'cnn' : cnn,
+            'multia' : multia,
+            'rescale_sigma' : rescale_sigma,
+            'noise_est' : noise_est}

@@ -1,18 +1,11 @@
 from imports import *
 
-def nlm(z, noise_params):
-    return denoise_nl_means(z, h=noise_params['filter'], fast_mode=True, **noise_params['patch'])
-
-def cnn(z):
-    r = denoiser(torch.Tensor(z)[None][None]).squeeze().detach().cpu().numpy()
-    z -= r
-    return z
-
-def tv(z, noise_params):
-    return denoise_wavelet(z, multichannel=noise_params['multia'], rescale_sigma=noise_params['rescale_sigma'])
-
-def denoiser(type, noisy, params):
-    return {'nlm':nlm(noisy, params),
-            'cnn':cnn(noisy),
-            'bm3d':bm3d(noisy, params['noise_est']), # uses bm3d function from package
-            'tv':tv(noisy, params)}[type]
+def denoise(kind, noisy, params):
+    if kind == 'cnn':
+        return (noisy - params['cnn'](torch.Tensor(noisy)[None][None]).squeeze().detach().cpu().numpy())
+    elif kind == 'nlm':
+        return denoise_nl_means(noisy, h=params['filter'], fast_mode=True, **params['patch'])
+    elif kind == 'tv':
+        return denoise_wavelet(noisy, multichannel=params['multia'], rescale_sigma=params['rescale_sigma'])
+    elif kind == 'bm3d':
+        return bm3d(noisy, params['noise_est'])
