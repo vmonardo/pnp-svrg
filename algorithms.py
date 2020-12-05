@@ -6,13 +6,15 @@ def pnp_svrg(params, denoiser, eta, T1, T2, mini_batch_size, verbose=True):
     psnr_per_iter = []
     
     # Main PnP-SVRG routine
-    z = params['noisy']
+    z = np.copy(params['noisy'])
     zs = [z]
+
+    params['t'] = 0
 
     # outer loop
     for i in range(T1):
-        # Gradient at reference point
-        mu = full_grad(z, params['mask'], params['y'])
+        # Full gradient at reference point
+        mu = grad(z, params['mask'], params['y'], params['F'], params['H'])
 
         w = np.copy(z) # Initialize reference point
 
@@ -24,16 +26,18 @@ def pnp_svrg(params, denoiser, eta, T1, T2, mini_batch_size, verbose=True):
             # Get batch index(indices) in terms of (row, col)
             ind = get_batch(mini_batch_size, params['mask'])
 
-            # calculate stochastic variance-reduced gradient
-            v = stoch_grad(z, ind, params['y']) - stoch_grad(w, ind, params['y']) + mu
+            # calculate stochastic variance-reduced gradient (SVRG)
+            v = grad(z, ind, params['y'], params['F'], params['H']) - grad(w, ind, params['y'], params['F'], params['H']) + mu
             
             # Gradient update
-            z -= eta*v
+            z -= (eta*params['lr_decay']**params['t'])*v
 
             # Denoise
             z = denoise(kind=denoiser, noisy=z, params=params)
             
             zs.append(z)
+
+            params['t'] += 1
 
             # stop timing
             time_per_iter.append(time.time() - start_time)
@@ -53,23 +57,27 @@ def pnp_gd(params, denoiser, eta, T, verbose=True):
     psnr_per_iter = []
 
     # Main PnP GD routine
-    z = params['noisy']
+    z = np.copy(params['noisy'])
     zs = [z]
+
+    params['t'] = 0
 
     for i in range(T):
         # start timing
         start_time = time.time()
 
         # calculate full gradient
-        v = full_grad(z, params['mask'], params['y'])
+        v = grad(z, params['mask'], params['y'], params['F'], params['H'])
 
         # Gradient update
-        z -= eta*v
+        z -= (eta*params['lr_decay']**params['t'])*v
 
         # Denoise
         z = denoise(kind=denoiser, noisy=z, params=params)
         
         zs.append(z)
+
+        params['t'] += 1
 
         # Log timing
         time_per_iter.append(time.time() - start_time)
@@ -88,8 +96,10 @@ def pnp_sgd(params, denoiser, eta, T, mini_batch_size, verbose=True):
     psnr_per_iter = []
 
     # Main PnP SGD routine
-    z = params['noisy']
+    z = np.copy(params['noisy'])
     zs = [z]
+
+    params['t'] = 0
 
     for i in range(T):
         # start timing
@@ -99,15 +109,17 @@ def pnp_sgd(params, denoiser, eta, T, mini_batch_size, verbose=True):
         ind = get_batch(mini_batch_size, params['mask'])
 
         # calculate stochastic gradient
-        v = stoch_grad(z, ind, params['y'])
+        v = grad(z, ind, params['y'], params['F'], params['H'])
 
         # Gradient update
-        z -= eta*v
+        z -= (eta*params['lr_decay']**params['t'])*v
 
         # Denoise
         z = denoise(kind=denoiser, noisy=z, params=params)
 
         zs.append(z)
+
+        params['t'] += 1
 
         # Log timing
         time_per_iter.append(time.time() - start_time)
@@ -126,8 +138,10 @@ def pnp_lsvrg(params, denoiser, eta, T, mini_batch_size, prob_update=0.1, verbos
     psnr_per_iter = []
 
     # Main PnP LSVRG routine
-    z = params['noisy']
+    z = np.copy(params['noisy'])
     zs = [z]
+
+    params['t'] = 0
 
     w = np.copy(z)
 
@@ -136,21 +150,23 @@ def pnp_lsvrg(params, denoiser, eta, T, mini_batch_size, prob_update=0.1, verbos
         start_time = time.time()
 
         # calculate full gradient
-        mu = full_grad(z, params['mask'], params['y'])
+        mu = grad(z, params['mask'], params['y'], params['F'], params['H'])
 
         # Get minibatch
         ind = get_batch(mini_batch_size, params['mask'])
 
         # calculate stochastic gradient
-        v = stoch_grad(z, ind, params['y']) - stoch_grad(w, ind, params['y']) + mu
+        v = grad(z, ind, params['y'], params['F'], params['H']) - grad(w, ind, params['y'], params['F'], params['H']) + mu
 
         # Gradient update
-        z -= eta*v
+        z -= (eta*params['lr_decay']**params['t'])*v
 
         # Denoise
         z = denoise(kind=denoiser, noisy=z, params=params)
 
         zs.append(z)
+
+        params['t'] += 1
 
         # update reference point with probability prob_update
         if np.random.random() < prob_update:

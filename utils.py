@@ -41,35 +41,17 @@ def psnr_display(img_path, output, title):
     ax.set_title(f"%s, PSNR = {psnr_out:0.2f}" % title)
     ax.axis('off')
 
-
-def full_grad(z, MASK, meas):
-    # Input: 
-    # z, optimization iterate
-    # MASK, observed fourier measurements
-    # meas, measurements = F(X) + w
-    # Output:
-    # Full gradient at z
-
-    # real grad
-    # H, W = z.shape[:2]
-    res = np.fft.fft2(z) * MASK
-    index = np.nonzero(MASK)
-    res[index] = res[index] - meas[index]
-    return np.real(np.fft.ifft2(res)) / np.count_nonzero(MASK)
-
-
-def stoch_grad(z, IND, meas):
-    # Input:
-    # z, optimization iterate
-    # meas, measurements = F(X) + w
-    # batch_index, indices to update
-    # Output:
-    # stochastic gradient at z for measurements in B
-    # H, W = z.shape[:2]
-    # batch gradient update
-    res = IND * (np.fft.fft2(z) - meas)
-    return np.real(np.fft.ifft2(res)) / np.count_nonzero(IND)
-
+def grad(z, indices, meas, F, N):
+    index = np.nonzero(indices)
+    
+    res = np.zeros((N,N), dtype=complex)
+    
+    F_i = F[index[0],:]
+    F_j = F[index[1],:]
+    
+    res[index] = ((F_i @ z * F_j).sum(-1) - meas[index])
+    
+    return (np.real(np.conj(F) @ res @ np.conj(F.T))/N**2)/len(index[0])
 
 def get_batch(B, MASK):
     H, W = MASK.shape[:2]
@@ -96,15 +78,16 @@ def gif(images):
         im.set_data(images[i])
         return im
 
-    anim = FuncAnimation(fig, animate, init_func=init, frames=range(len(images)), interval=40)
+    anim = FuncAnimation(fig, animate, init_func=init, frames=range(len(images)), interval=60)
 
     return HTML(anim.to_html5_video())
 
 def create_problem(img_path='./data/Set12/13.jpg', H=256, W=256, sample_prob=0.5, sigma=1.0,  # general params 
                    filter_size=0.015, patch_size=5, patch_distance=6, multichannel=True,      # NLM params
-                   network_type='DnCNN', device='cpu',                                        # CNN params
+                   network_type='DnCNN', device='cuda',                                       # CNN params
                    multia=True, rescale_sigma=True,                                           # TV params
-                   noise_est=0.015):                                                          # BM3D params
+                   noise_est=0.015,                                                           # BM3D params
+                   lr_decay=0.999, filter_decay=0.999):                                       # decay params                   
 
     original = np.array(Image.open(img_path).resize((H, W)))
     original = (original - np.min(original)) / (np.max(original) - np.min(original))
@@ -127,16 +110,25 @@ def create_problem(img_path='./data/Set12/13.jpg', H=256, W=256, sample_prob=0.5
                    experiment_name='exp1_flickr30k_' + network_type, 
                    data=False, sigma=30, batch_size=10).net.to(device)
 
+    i, j = np.meshgrid(np.arange(H), np.arange(H))
+    omega = np.exp(-2*math.pi*1J/H)
+    F = np.power(omega, i*j)
+
     return {'noisy': x_init,
             'mask': mask,
             'y': y,
             'original': original,
             'H': H,
             'W': W,
+            'F' : F,
             'indices': indices,
             'filter' : filter_size,
             'patch' : dict(patch_size=patch_size, patch_distance=patch_distance, multichannel=multichannel),
             'cnn' : cnn,
+            'device' : device,
             'multia' : multia,
             'rescale_sigma' : rescale_sigma,
-            'noise_est' : noise_est}
+            'noise_est' : noise_est,
+            't' : 0,
+            'lr_decay' : lr_decay,
+            'filter_decay' : filter_decay}
