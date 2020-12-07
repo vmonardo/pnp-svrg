@@ -82,7 +82,7 @@ def gif(images):
 
     return HTML(anim.to_html5_video())
 
-def create_problem(img_path='./data/Set12/13.jpg', H=256, W=256, sample_prob=0.5, sigma=1.0,  # general params 
+def create_problem(img_path='./data/Set12/13.png', H=256, W=256, sample_prob=0.5, sigma=1.0,  # general params
                    filter_size=0.015, patch_size=5, patch_distance=6, multichannel=True,      # NLM params
                    network_type='DnCNN', device='cuda',                                       # CNN params
                    multia=True, rescale_sigma=True,                                           # TV params
