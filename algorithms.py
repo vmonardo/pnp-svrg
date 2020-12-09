@@ -14,9 +14,14 @@ def pnp_svrg(params, denoiser, eta, T1, T2, mini_batch_size, verbose=True):
     # outer loop
     for i in range(T1):
         # Full gradient at reference point
+        start_time = time.time()
+
         mu = grad(z, params['mask'], params['y'], params['F'], params['H'])
 
         w = np.copy(z) # Initialize reference point
+
+        time_per_iter.append(time.time() - start_time)
+        psnr_per_iter.append(peak_signal_noise_ratio(params['original'], z))
 
         # inner loop
         for j in range(T2):  
