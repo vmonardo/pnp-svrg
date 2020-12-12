@@ -182,8 +182,8 @@ class Denoiser():
         self.test_loader = None
         
         if data:
-            self.train_set = FlickrSet(mode='train', sigma=self.sigma)
-            self.test_set = FlickrSet(mode='test', sigma=self.sigma)
+            self.train_set = FlickrSet(mode='train', sigma=self.sigma, image_size=(40,40))
+            self.test_set = FlickrSet(mode='test', sigma=self.sigma, image_size=(40,40))
         
             self.train_loader = td.DataLoader(self.train_set, batch_size=batch_size, shuffle=True,
                                               drop_last=True, pin_memory=True)
@@ -260,6 +260,12 @@ class Denoiser():
                                 map_location=self.device)
         self.load_state_dict(checkpoint)
         del checkpoint
+
+    def myimshow(self, image, ax):
+        image = image.cpu().detach().numpy()
+        image = (image - image.min())/(image.max() - image.min())
+        h = ax.imshow(image.squeeze(), cmap='gray')
+        return h
         
     def plot(self, fig, axes, noisy_img):
         with torch.no_grad():
@@ -273,10 +279,10 @@ class Denoiser():
         axes[1][0].clear()
         axes[1][1].clear()
                 
-        myimshow(noisy_img, ax=axes[0][0])
+        self.myimshow(noisy_img, ax=axes[0][0])
         axes[0][0].set_title('Noisy Image')
         
-        myimshow(denoised, ax=axes[0][1])
+        self.myimshow(denoised, ax=axes[0][1])
         axes[0][1].set_title('Denoised Image')
         
         axes[1][0].plot([self.train_loss[k] for k in range(self.epoch)], label='training loss')

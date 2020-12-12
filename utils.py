@@ -23,12 +23,6 @@ def show_grid(images, titles, rows=3, cols=2, figsize=(7,3), ax=plt):
     fig.tight_layout()
 
     return h
- 
-def myimshow(image, ax=plt):
-    image = image.cpu().detach().numpy()
-    image = (image - image.min())/(image.max() - image.min())
-    h = ax.imshow(image.squeeze(), cmap='gray')
-    return h
 
 def psnr_display(img_path, output, title):
     ORIG = np.array(Image.open(img_path).resize((256,256))) / 255.0
@@ -84,16 +78,16 @@ def gif(images):
 
 def create_problem(img_path='./data/Set12/13.png', H=256, W=256, sample_prob=0.5, sigma=1.0,  # general params
                    filter_size=0.015, patch_size=5, patch_distance=6, multichannel=True,      # NLM params
-                   network_type='DnCNN', device='cuda',                                       # CNN params
+                   cnn_sigma=40, device='cuda',                                               # CNN params
                    multia=True, rescale_sigma=True,                                           # TV params
                    noise_est=0.015,                                                           # BM3D params
-                   lr_decay=0.999, filter_decay=0.999):                                       # decay params                   
+                   lr_decay=0.999, filter_decay=0.999, cnn_decay=0.9):                        # decay params                   
 
     original = np.array(Image.open(img_path).resize((H, W)))
     original = (original - np.min(original)) / (np.max(original) - np.min(original))
 
     np.random.seed(0)
-    mask = np.random.choice([0, 1], size=(H, W), p=[1 - sample_prob, sample_prob])
+    mask = np.random.choice([0, 1], size=(H, W), p=[1- sample_prob, sample_prob])
     indices = np.transpose(np.nonzero(mask))
 
     forig = np.fft.fft2(original)
@@ -106,9 +100,9 @@ def create_problem(img_path='./data/Set12/13.png', H=256, W=256, sample_prob=0.5
     x_init = np.absolute(np.fft.ifft2(y))
     # x_init = (x_init - np.min(x_init)) / (np.max(x_init) - np.min(x_init))
 
-    cnn = Denoiser(net=eval(network_type)(17), 
-                   experiment_name='exp1_flickr30k_' + network_type, 
-                   data=False, sigma=30, batch_size=10).net.to(device)
+    cnn = Denoiser(net=DnCNN(17), 
+                   experiment_name='exp_' + str(cnn_sigma), 
+                   data=False, sigma=cnn_sigma, batch_size=20).net.to(device)
 
     i, j = np.meshgrid(np.arange(H), np.arange(H))
     omega = np.exp(-2*math.pi*1J/H)
@@ -131,4 +125,5 @@ def create_problem(img_path='./data/Set12/13.png', H=256, W=256, sample_prob=0.5
             'noise_est' : noise_est,
             't' : 0,
             'lr_decay' : lr_decay,
-            'filter_decay' : filter_decay}
+            'filter_decay' : filter_decay,
+            'cnn_decay' : cnn_decay}
