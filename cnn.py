@@ -41,41 +41,7 @@ class FlickrSet(td.Dataset):
         noisy = clean + noise
         
         return noisy, clean, noise.squeeze()
-
-'''
-DnCNN
-'''   
-# class DnCNN(nn.Module):
-#     def __init__(self, D, C=64):
-#         super(DnCNN, self).__init__()
-#         self.D = D
         
-#         self.conv = nn.ModuleList()
-#         self.conv.append(nn.Conv2d(1, C, 3, padding=1))   
-#         for k in range(D):
-#             self.conv.append(nn.Conv2d(C, C, 3, padding=1))
-#         self.conv.append(nn.Conv2d(C, 1, 3, padding=1))    
-        
-#         for k in range(len(self.conv)-1):
-#             nn.init.kaiming_normal_(self.conv[k].weight.data, nonlinearity='relu')
-            
-#         self.bn = nn.ModuleList()
-#         for k in range(D):
-#             self.bn.append(nn.BatchNorm2d(C, C)) 
-        
-#         for k in range(len(self.bn)):
-#             nn.init.constant_(self.bn[k].weight.data, 1.25 * np.sqrt(C))
-        
-        
-#     def forward(self, x):
-#         D = self.D
-#         h = F.relu(self.conv[0](x))
-        
-#         for k in range(1, D+1):
-#             h = F.relu(self.bn[k-1](self.conv[k](h)))
-                    
-#         y = self.conv[D+1](h) + x
-#         return y
 
 class DnCNN(nn.Module):
     def __init__(self, num_of_layers, channels=1):
@@ -95,79 +61,7 @@ class DnCNN(nn.Module):
     def forward(self, x):
         out = self.dncnn(x)
         return out
-    
-'''
-DUDnCNN
-'''    
-def pad(kernel_size, dilation):
-    return int(((kernel_size + (kernel_size-1)*(dilation-1))-1)/2)
 
-class DUDnCNN(nn.Module):
-    def __init__(self, D, C=64):
-        super(DUDnCNN, self).__init__()
-        self.D = D
-        
-        # CONVOLUTION MODULES
-        self.conv = nn.ModuleList()
-        
-        self.conv.append(nn.Conv2d(1, C, 3, padding=pad(3, 1), dilation=1))
-        self.conv.append(nn.Conv2d(C, C, 3, padding=pad(3, 1), dilation=1))
-        
-        dilation=1
-        for k in range(2, int(D/2)):
-            dilation *= 2
-            self.conv.append(nn.Conv2d(C, C, 3, padding=pad(3, dilation), dilation=dilation))
-        
-        dilation = 2 ** (int(D/2)-1)
-        self.conv.append(nn.Conv2d(C, C, 3, padding=pad(3, dilation), dilation=dilation))
-        self.conv.append(nn.Conv2d(C, C, 3, padding=pad(3, dilation), dilation=dilation))
-            
-        for k in range(int(D/2+2), D+1):
-            dilation = int(dilation/2)
-            self.conv.append(nn.Conv2d(C, C, 3, padding=pad(3, dilation), dilation=dilation))
-            
-        self.conv.append(nn.Conv2d(C, 1, 3, padding=pad(3, 1), dilation=1))
-        
-        for k in range(len(self.conv)-1):
-            nn.init.kaiming_normal_(self.conv[k].weight.data, nonlinearity='relu')
-            
-            
-        # BATCH NORMALIZATION MODULES
-        self.bn = nn.ModuleList()
-        
-        for k in range(D):
-            self.bn.append(nn.BatchNorm2d(C, C)) 
-        
-        for k in range(len(self.bn)):
-            nn.init.constant_(self.bn[k].weight.data, 1.25 * np.sqrt(C))
-        
-        
-    def forward(self, x):        
-        D = self.D
-        
-        shortcuts = []
-        
-        torch.backends.cudnn.benchmark=True
-        
-        h = F.relu(self.conv[0](x))
-        shortcuts.append(h)
-                
-        for k in range(1, int(D/2)):
-            h = F.relu(self.bn[k-1](self.conv[k](h)))
-                                                
-            shortcuts.append(h)
-                    
-        h = self.bn[int(D/2-1)](self.conv[int(D/2)](h))
-        h = (self.bn[int(D/2)](self.conv[int(D/2+1)](h)) + shortcuts[-1]) / (2**0.5)
-                                        
-        for k in range(int(D/2+2), D+1):                        
-            h = (F.relu(self.bn[k-1](self.conv[k](h))) + shortcuts[D-k]) / (2**0.5)
-            
-        y = self.conv[D+1](h) + x
-        
-        torch.backends.cudnn.benchmark=False
-        
-        return y
 
 class Denoiser():
     def __init__(self, net, experiment_name, sigma, batch_size, data=False):        
