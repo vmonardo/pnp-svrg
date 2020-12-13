@@ -24,9 +24,14 @@ def show_grid(images, titles, rows=3, cols=2, figsize=(7,3), ax=plt):
 
     return h
 
-def psnr_display(img_path, output, title):
-    ORIG = np.array(Image.open(img_path).resize((256,256))) / 255.0
-    original = (ORIG - np.min(ORIG)) / (np.max(ORIG) - np.min(ORIG))
+def psnr_display(output, title, img_path=None, img=None):
+    if img_path is not None:
+        ORIG = np.array(Image.open(img_path).resize((256,256)))
+        original = (ORIG - np.min(ORIG)) / (np.max(ORIG) - np.min(ORIG))
+    elif img is not None:
+        original = img
+    else:
+        raise Exception('Need to pass in image path or image')
 
     psnr_out = peak_signal_noise_ratio(original, output)
     fig = plt.figure()
@@ -76,18 +81,24 @@ def gif(images):
 
     return HTML(anim.to_html5_video())
 
-def create_problem(img_path='./data/Set12/13.png', H=256, W=256, sample_prob=0.5, sigma=1.0,  # general params
+def create_problem(img_path=None, img=None, H=256, W=256, sample_prob=0.5, sigma=1.0,         # general params
                    filter_size=0.015, patch_size=5, patch_distance=6, multichannel=True,      # NLM params
                    cnn_sigma=40, device='cuda',                                               # CNN params
                    multia=True, rescale_sigma=True,                                           # TV params
                    noise_est=0.015,                                                           # BM3D params
                    lr_decay=0.999, filter_decay=0.999, cnn_decay=0.9):                        # decay params                   
 
-    original = np.array(Image.open(img_path).resize((H, W)))
+    if img_path is not None:
+        original = np.array(Image.open(img_path).resize((H, W)))
+    elif img is not None:
+        original = img
+    else:
+        raise Exception('Need to pass in image path or image')
+
     original = (original - np.min(original)) / (np.max(original) - np.min(original))
 
     np.random.seed(0)
-    mask = np.random.choice([0, 1], size=(H, W), p=[1- sample_prob, sample_prob])
+    mask = np.random.choice([0, 1], size=(H, W), p=[1 - sample_prob, sample_prob])
     indices = np.transpose(np.nonzero(mask))
 
     forig = np.fft.fft2(original)
@@ -98,7 +109,6 @@ def create_problem(img_path='./data/Set12/13.png', H=256, W=256, sample_prob=0.5
     y = np.multiply(mask, y0)
 
     x_init = np.absolute(np.fft.ifft2(y))
-    # x_init = (x_init - np.min(x_init)) / (np.max(x_init) - np.min(x_init))
 
     cnn = Denoiser(net=DnCNN(17), 
                    experiment_name='exp_' + str(cnn_sigma), 
@@ -127,3 +137,25 @@ def create_problem(img_path='./data/Set12/13.png', H=256, W=256, sample_prob=0.5
             'lr_decay' : lr_decay,
             'filter_decay' : filter_decay,
             'cnn_decay' : cnn_decay}
+
+def denoise_rgb(img_path):
+    from algorithms import pnp_svrg
+
+    def denoise_slice(params):
+        return pnp_svrg(params, denoiser='cnn', eta=20e3, tt=20, T2=10, 
+                        mini_batch_size=int(20e3), verbose=False)[0]
+    
+    img = np.array(Image.open(img_path).resize((256,256)), dtype=float)
+
+    slice0 = create_problem(img=img[:,:,0])
+    slice1 = create_problem(img=img[:,:,1])
+    slice2 = create_problem(img=img[:,:,2])
+
+    noisy = np.rollaxis(np.array([slice0['noisy'], slice1['noisy'], slice2['noisy']]), 0, 3)
+    original = np.rollaxis(np.array([slice0['original'], slice1['original'], slice2['original']]), 0, 3)
+
+    out0, out1, out2 = denoise_slice(slice0), denoise_slice(slice1), denoise_slice(slice2)
+    
+    denoised = np.rollaxis(np.array([out0, out1, out2]), 0, 3)
+    
+    return original, noisy, denoised
