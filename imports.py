@@ -21,7 +21,6 @@ import copy
 from matplotlib.animation import FuncAnimation
 from IPython.display import HTML
 import ffmpeg
-from interruptingcow import timeout
 
 from skimage import data, img_as_float
 from skimage.restoration import denoise_nl_means, denoise_wavelet
