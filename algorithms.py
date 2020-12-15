@@ -13,56 +13,59 @@ def pnp_svrg(params, denoiser, eta, tt, T2, mini_batch_size, verbose=True):
 
     i = 0
 
-    try:  
-        with timeout(tt, exception=RuntimeError):
-            # outer loop
-            while True:
-                # Full gradient at reference point
-                start_time = time.time()
+    elapsed = time.time()
 
-                mu = grad(z, params['mask'], params['y'], params['F'], params['H'])
+    # outer loop
+    while (time.time() - elapsed) < tt:
+        # Full gradient at reference point
+        start_time = time.time()
 
-                w = np.copy(z) # Initialize reference point
+        mu = grad(z, params['mask'], params['y'], params['F'], params['H'])
 
-                time_per_iter.append(time.time() - start_time)
-                psnr_per_iter.append(peak_signal_noise_ratio(params['original'], z))
+        w = np.copy(z) # Initialize reference point
 
-                # inner loop
-                for j in range(T2):  
-                    # start timing
-                    start_time = time.time()
+        time_per_iter.append(time.time() - start_time)
+        psnr_per_iter.append(peak_signal_noise_ratio(params['original'], z))
 
-                    # Get batch index(indices) in terms of (row, col)
-                    ind = get_batch(mini_batch_size, params['mask'])
+        # inner loop
+        for j in range(T2):
+            if (time.time() - elapsed) >= tt:
+                return z, time_per_iter, psnr_per_iter, zs
 
-                    # calculate stochastic variance-reduced gradient (SVRG)
-                    v = grad(z, ind, params['y'], params['F'], params['H']) - grad(w, ind, params['y'], params['F'], params['H']) + mu
+            # start timing
+            start_time = time.time()
 
-                    # Gradient update
-                    z -= (eta*params['lr_decay']**params['t'])*v
+            # Get batch index(indices) in terms of (row, col)
+            ind = get_batch(mini_batch_size, params['mask'])
 
-                    if verbose:
-                        print("After gradient update: " + str(i) + " " + str(j) + " " + str(peak_signal_noise_ratio(params['original'], z)))
+            # calculate stochastic variance-reduced gradient (SVRG)
+            v = grad(z, ind, params['y'], params['F'], params['H']) - grad(w, ind, params['y'], params['F'], params['H']) + mu
 
-                    # Denoise
-                    z = denoise(kind=denoiser, noisy=z, params=params)
-                    
-                    zs.append(z)
+            # Gradient update
+            z -= (eta*params['lr_decay']**params['t'])*v
 
-                    params['t'] += 1
+            if verbose:
+                print("After gradient update: " + str(i) + " " + str(j) + " " + str(peak_signal_noise_ratio(params['original'], z)))
 
-                    # stop timing
-                    time_per_iter.append(time.time() - start_time)
-                    psnr_per_iter.append(peak_signal_noise_ratio(params['original'], z))
+            # Denoise
+            z = denoise(kind=denoiser, noisy=z, params=params)
+            
+            zs.append(z)
 
-                    if verbose:
-                        print("After denoising update: " + str(i) + " " + str(j) + " " + str(psnr_per_iter[-1]))
-                        print()
-                
-                i += 1
-    except RuntimeError:
-        # output denoised image, time stats, psnr stats
-        return z, time_per_iter, psnr_per_iter, zs
+            params['t'] += 1
+
+            # stop timing
+            time_per_iter.append(time.time() - start_time)
+            psnr_per_iter.append(peak_signal_noise_ratio(params['original'], z))
+
+            if verbose:
+                print("After denoising update: " + str(i) + " " + str(j) + " " + str(psnr_per_iter[-1]))
+                print()
+        
+        i += 1
+
+    # output denoised image, time stats, psnr stats
+    return z, time_per_iter, psnr_per_iter, zs
 
 
 def pnp_gd(params, denoiser, eta, tt, verbose=True):
@@ -78,37 +81,36 @@ def pnp_gd(params, denoiser, eta, tt, verbose=True):
 
     i = 0
 
-    try:
-        with timeout(tt, exception=RuntimeError):
-            while True:
-                # start timing
-                start_time = time.time()
+    elapsed = time.time()
 
-                # calculate full gradient
-                v = grad(z, params['mask'], params['y'], params['F'], params['H'])
+    while (time.time() - elapsed) < tt:
+        # start timing
+        start_time = time.time()
 
-                # Gradient update
-                z -= (eta*params['lr_decay']**params['t'])*v
+        # calculate full gradient
+        v = grad(z, params['mask'], params['y'], params['F'], params['H'])
 
-                # Denoise
-                z = denoise(kind=denoiser, noisy=z, params=params)
-                
-                zs.append(z)
+        # Gradient update
+        z -= (eta*params['lr_decay']**params['t'])*v
 
-                params['t'] += 1
+        # Denoise
+        z = denoise(kind=denoiser, noisy=z, params=params)
+        
+        zs.append(z)
 
-                # Log timing
-                time_per_iter.append(time.time() - start_time)
+        params['t'] += 1
 
-                psnr_per_iter.append(peak_signal_noise_ratio(params['original'], z))
+        # Log timing
+        time_per_iter.append(time.time() - start_time)
 
-                if verbose:
-                    print(str(i) + " " + str(psnr_per_iter[-1]))
+        psnr_per_iter.append(peak_signal_noise_ratio(params['original'], z))
 
-                i += 1
+        if verbose:
+            print(str(i) + " " + str(psnr_per_iter[-1]))
 
-    except RuntimeError:
-        return z, time_per_iter, psnr_per_iter, zs
+        i += 1
+
+    return z, time_per_iter, psnr_per_iter, zs
 
 
 def pnp_sgd(params, denoiser, eta, tt, mini_batch_size, verbose=True):
@@ -124,40 +126,39 @@ def pnp_sgd(params, denoiser, eta, tt, mini_batch_size, verbose=True):
 
     i = 0
 
-    try:
-        with timeout(tt, exception=RuntimeError):
-            while True:
-                # start timing
-                start_time = time.time()
+    elapsed = time.time()
 
-                # Get minibatch
-                ind = get_batch(mini_batch_size, params['mask'])
+    while (time.time() - elapsed) < tt:
+        # start timing
+        start_time = time.time()
 
-                # calculate stochastic gradient
-                v = grad(z, ind, params['y'], params['F'], params['H'])
+        # Get minibatch
+        ind = get_batch(mini_batch_size, params['mask'])
 
-                # Gradient update
-                z -= (eta*params['lr_decay']**params['t'])*v
+        # calculate stochastic gradient
+        v = grad(z, ind, params['y'], params['F'], params['H'])
 
-                # Denoise
-                z = denoise(kind=denoiser, noisy=z, params=params)
+        # Gradient update
+        z -= (eta*params['lr_decay']**params['t'])*v
 
-                zs.append(z)
+        # Denoise
+        z = denoise(kind=denoiser, noisy=z, params=params)
 
-                params['t'] += 1
+        zs.append(z)
 
-                # Log timing
-                time_per_iter.append(time.time() - start_time)
+        params['t'] += 1
 
-                psnr_per_iter.append(peak_signal_noise_ratio(params['original'], z))
+        # Log timing
+        time_per_iter.append(time.time() - start_time)
 
-                if verbose:
-                    print(str(i) + " " + str(psnr_per_iter[-1]))
+        psnr_per_iter.append(peak_signal_noise_ratio(params['original'], z))
 
-                i += 1
+        if verbose:
+            print(str(i) + " " + str(psnr_per_iter[-1]))
 
-    except RuntimeError:
-        return z, time_per_iter, psnr_per_iter, zs
+        i += 1
+
+    return z, time_per_iter, psnr_per_iter, zs
 
 
 def pnp_lsvrg(params, denoiser, eta, tt, mini_batch_size, prob_update=0.1, verbose=True):
@@ -175,53 +176,50 @@ def pnp_lsvrg(params, denoiser, eta, tt, mini_batch_size, prob_update=0.1, verbo
 
     w = np.copy(z)
 
-    try:
-        with timeout(tt, exception=RuntimeError):
-            start_time = time.time()
+    elapsed = time.time()
+    
+    # calculate full gradient
+    start_time = time.time()
+    mu = grad(z, params['mask'], params['y'], params['F'], params['H'])
+    time_per_iter.append(time.time() - start_time)
+    psnr_per_iter.append(peak_signal_noise_ratio(params['original'], z))
 
-            # calculate full gradient
+    while (time.time() - elapsed) < tt:
+        # start timing
+        start_time = time.time()
+
+        # Get minibatch
+        ind = get_batch(mini_batch_size, params['mask'])
+
+        # calculate stochastic gradient
+        v = grad(z, ind, params['y'], params['F'], params['H']) - grad(w, ind, params['y'], params['F'], params['H']) + mu
+
+        # Gradient update
+        z -= (eta*params['lr_decay']**params['t'])*v
+
+        # Denoise
+        z = denoise(kind=denoiser, noisy=z, params=params)
+
+        zs.append(z)
+
+        params['t'] += 1
+
+        # update reference point with probability prob_update
+        if np.random.random() < prob_update:
+            w = np.copy(z)
             mu = grad(z, params['mask'], params['y'], params['F'], params['H'])
 
-            time_per_iter.append(time.time() - start_time)
-            psnr_per_iter.append(peak_signal_noise_ratio(params['original'], z))
+        # Log timing
+        time_per_iter.append(time.time() - start_time)
 
-            while True:
-                # start timing
-                start_time = time.time()
+        psnr_per_iter.append(peak_signal_noise_ratio(params['original'], z))
 
-                # Get minibatch
-                ind = get_batch(mini_batch_size, params['mask'])
+        if verbose:
+            print(str(i) + " " + str(psnr_per_iter[-1]))
 
-                # calculate stochastic gradient
-                v = grad(z, ind, params['y'], params['F'], params['H']) - grad(w, ind, params['y'], params['F'], params['H']) + mu
+        i += 1
 
-                # Gradient update
-                z -= (eta*params['lr_decay']**params['t'])*v
-
-                # Denoise
-                z = denoise(kind=denoiser, noisy=z, params=params)
-
-                zs.append(z)
-
-                params['t'] += 1
-
-                # update reference point with probability prob_update
-                if np.random.random() < prob_update:
-                    w = np.copy(z)
-                    mu = grad(z, params['mask'], params['y'], params['F'], params['H'])
-
-                # Log timing
-                time_per_iter.append(time.time() - start_time)
-
-                psnr_per_iter.append(peak_signal_noise_ratio(params['original'], z))
-
-                if verbose:
-                    print(str(i) + " " + str(psnr_per_iter[-1]))
-
-                i += 1
-
-    except RuntimeError:
-        return z, time_per_iter, psnr_per_iter, zs
+    return z, time_per_iter, psnr_per_iter, zs
        
 
 
