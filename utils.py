@@ -18,8 +18,7 @@ def show_grid(images, titles, rows=3, cols=2, figsize=(7,3), ax=plt):
     for axis, image, title in zip(axes.flatten(), images, titles):
         image = (image - image.min())/(image.max() - image.min())
         axis.set_title(title)
-        h = axis.imshow(image.squeeze(), cmap='gray')
-
+        h = axis.imshow(image.squeeze(), cmap='gray', vmin=0, vmax=1)
     fig.tight_layout()
 
     return h
