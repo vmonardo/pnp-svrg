@@ -42,7 +42,10 @@ class FlickrSet(td.Dataset):
         
         return noisy, clean, noise.squeeze()
         
-
+'''
+realSN-DnCNN borrowed from https://github.com/uclaopt/Provable_Plug_and_Play/blob/master/model/realSN_models.py
+Paper: https://arxiv.org/pdf/1905.05406.pdf
+'''
 class DnCNN(nn.Module):
     def __init__(self, num_of_layers, channels=1):
         super(DnCNN, self).__init__()

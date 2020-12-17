@@ -1,3 +1,9 @@
+
+'''
+Real spectral normalization borrowed from https://github.com/uclaopt/Provable_Plug_and_Play/blob/master/model/Spectral_Normalize_chen.py
+Paper: https://arxiv.org/pdf/1905.05406.pdf
+'''
+
 """
 Spectral Normalization borrowed from https://arxiv.org/abs/1802.05957
 Real SN by convolution. Each layer has lipschtz constant of 1
