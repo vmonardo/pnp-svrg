@@ -23,9 +23,10 @@ from IPython.display import HTML
 import ffmpeg
 
 from skimage import data, img_as_float
-from skimage.restoration import denoise_nl_means, denoise_wavelet
+from skimage.restoration import denoise_nl_means, denoise_wavelet, denoise_tv_chambolle
 from skimage.metrics import peak_signal_noise_ratio
 from skimage.util import random_noise
+# from scikits.image.filter import tv_denoise
 
 from bm3d import bm3d
 
