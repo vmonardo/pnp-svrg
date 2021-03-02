@@ -1,7 +1,7 @@
 from imports import *
 
 class Problem():
-    def __init__(self, img_path, img, H, W):
+    def __init__(self, img_path, img, H, W, lr_decay):
         if img_path is not None:
             original = np.array(Image.open(img_path).resize((H, W)))
         elif img is not None:
@@ -14,6 +14,7 @@ class Problem():
         self.original = original
         self.H = H
         self.W = W
+        self.lr_decay = lr_decay
 
     def batch(self, mini_batch_size):
         raise NotImplementedError('Need to implement batch() method')
@@ -28,8 +29,9 @@ class Problem():
 
 class CSMRI(Problem):
     def __init__(self, img_path=None, img=None, H=256, W=256, 
-                       sample_prob=0.5, sigma=1.0):
-        super().__init__(img_path, img, H, W)
+                       sample_prob=0.5, sigma=1.0,
+                       lr_decay=0.999):
+        super().__init__(img_path, img, H, W, lr_decay)
 
         self.sample_prob = sample_prob
         self.sigma = sigma
@@ -97,8 +99,9 @@ class CSMRI(Problem):
 
 class Deblur(Problem):
     def __init__(self, img_path=None, img=None, H=256, W=256, 
-                       kernel_path=None, kernel=None):
-        super().__init__(img_path, img, H, W)
+                       kernel_path=None, kernel=None,
+                       lr_decay=0.999):
+        super().__init__(img_path, img, H, W, lr_decay)
 
         # problem setup
         if kernel_path is not None:

@@ -40,7 +40,7 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True):
             v = problem.stoch_grad(z, mini_batch_size) - problem.stoch_grad(w, mini_batch_size) + mu
 
             # Gradient update
-            z -= (eta*denoiser.lr_decay**denoiser.t)*v
+            z -= (eta*problem.lr_decay**denoiser.t)*v
 
             if verbose:
                 print("After gradient update: " + str(i) + " " + str(j) + " " + str(peak_signal_noise_ratio(problem.original, z)))
@@ -89,7 +89,7 @@ def pnp_gd(problem, denoiser, eta, tt, verbose=True):
         v = problem.full_grad(z)
 
         # Gradient update
-        z -= (eta*denoiser.lr_decay**denoiser.t)*v
+        z -= (eta*problem.lr_decay**denoiser.t)*v
 
         # Denoise
         z = denoiser.denoise(noisy=z)
@@ -134,7 +134,7 @@ def pnp_sgd(problem, denoiser, eta, tt, mini_batch_size, verbose=True):
         v = problem.stoch_grad(z, mini_batch_size)
 
         # Gradient update
-        z -= (eta*denoiser.lr_decay**denoiser.t)*v
+        z -= (eta*problem.lr_decay**denoiser.t)*v
 
         # Denoise
         z = denoiser.denoise(noisy=z)
@@ -187,7 +187,7 @@ def pnp_lsvrg(problem, denoiser, eta, tt, mini_batch_size, prob_update=0.1, verb
         v = problem.stoch_grad(z, mini_batch_size) - problem.stoch_grad(w, mini_batch_size) + mu
 
         # Gradient update
-        z -= (eta*denoiser.lr_decay**denoiser.t)*v
+        z -= (eta*problem.lr_decay**denoiser.t)*v
 
         # Denoise
         z = denoiser.denoise(noisy=z)
