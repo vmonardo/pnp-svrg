@@ -37,7 +37,6 @@ class CSMRI(Problem):
         self.sigma = sigma
 
         # problem setup
-        np.random.seed(0)
         mask = np.random.choice([0, 1], size=(H, W), p=[1-sample_prob, sample_prob])
 
         forig = np.fft.fft2(self.original)
@@ -99,7 +98,7 @@ class CSMRI(Problem):
 
 class Deblur(Problem):
     def __init__(self, img_path=None, img=None, H=256, W=256, 
-                       kernel_path=None, kernel=None,
+                       kernel_path=None, kernel=None, sigma=1.0, subsampling=2, 
                        lr_decay=0.999):
         super().__init__(img_path, img, H, W, lr_decay)
 
@@ -110,12 +109,49 @@ class Deblur(Problem):
             blur = kernel
         else:
             raise Exception('Need to pass in blur kernel path or kernel')
+        
+        N = H*W
+        self.sigma = sigma
+        self.subsampling = subsampling
+        
+        noises = np.random.normal(0, sigma, (N,))
+        
+        ## Create cirulant matrix
+        vb = np.matrix.flatten(np.asarray(blur)) # flatten blurring kernel into a vector
+        Cb = circulant(vb) # create circulant matrix of v_b
 
+        ## Vectorize orig image
+        vorig = np.matrix.flatten(np.asarray(self.original))
+        
+        ## Create noisy measurements
+        y0 = Cb.dot(vorig) + noises
+        y = y0[::subsampling]
+
+        ## Precompute essential matrices
+        idx = np.arange(0, H*W, subsampling)
+        S_Cb = Cb[idx,:]
+        
+        ## Create initialization
+        S_Cb_pinv = np.linalg.pinv(S_Cb)
+        xinit = S_Cb_pinv.dot(y)
+        
+        self.noisy = xinit
+        self.y = y
+        self.SCb = S_Cb
+        
     def batch(self, mini_batch_size):
-        pass
+        N = self.H*self.W
+        tmp = np.random.permutation(N)
+        k = tmp[0:mini_batch_size]
+        batch = np.zeros(N)
+        batch[k] = 1 
+        return batch
 
     def full_grad(self, z):
-        pass
+        return self.SCb.T.dot(self.SCb.dot(z) - self.y)
 
     def stoch_grad(self, z, mini_batch_size):
-        pass
+        index = self.batch(mini_batch_size)
+        res = self.SCb.dot(z) - self.y
+        weights = np.multiply(index, res)
+        return self.SCb.T.dot(weights)
