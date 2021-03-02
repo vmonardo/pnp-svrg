@@ -32,7 +32,8 @@ from bm3d import bm3d
 
 from spectral import *
 from cnn import *
-from denoisers import *
+from denoise import *
 from utils import *
 from algorithms import *
+from problem import *
 
