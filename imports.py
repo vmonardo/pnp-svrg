@@ -37,3 +37,4 @@ from utils import *
 from algorithms import *
 from problem import *
 
+from scipy.linalg import circulant
