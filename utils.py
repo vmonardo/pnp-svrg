@@ -24,9 +24,9 @@ def show_grid(images, titles, rows=3, cols=2, figsize=(7,3), ax=plt):
 
     return h
 
-def psnr_display(output, title, img_path=None, img=None):
+def psnr_display(output, title, img_path=None, img=None, H=256, W=256):
     if img_path is not None:
-        ORIG = np.array(Image.open(img_path).resize((256,256)))
+        ORIG = np.array(Image.open(img_path).resize((H,W)))
         original = (ORIG - np.min(ORIG)) / (np.max(ORIG) - np.min(ORIG))
     elif img is not None:
         original = img

@@ -97,7 +97,7 @@ class CSMRI(Problem):
         return (np.real(np.conj(self.F) @ res @ np.conj(self.F.T))/N**2)/len(index[0])
 
 class Deblur(Problem):
-    def __init__(self, img_path=None, img=None, H=256, W=256, 
+    def __init__(self, img_path=None, img=None, H=64, W=64, 
                        kernel_path=None, kernel=None, sigma=1.0, subsampling=2, 
                        lr_decay=0.999):
         super().__init__(img_path, img, H, W, lr_decay)
@@ -118,7 +118,7 @@ class Deblur(Problem):
         
         ## Create cirulant matrix
         vb = np.matrix.flatten(np.asarray(blur)) # flatten blurring kernel into a vector
-        Cb = circulant(vb) # create circulant matrix of v_b
+        Cb = scipy.linalg.circulant(vb) # create circulant matrix of v_b
 
         ## Vectorize orig image
         vorig = np.matrix.flatten(np.asarray(self.original))
@@ -135,12 +135,13 @@ class Deblur(Problem):
         S_Cb_pinv = np.linalg.pinv(S_Cb)
         xinit = S_Cb_pinv.dot(y)
         
-        self.noisy = xinit
+        self.num_meas = S_Cb.shape[0]
+        self.noisy = xinit.reshape(H,W)
         self.y = y
         self.SCb = S_Cb
         
     def batch(self, mini_batch_size):
-        N = self.H*self.W
+        N = self.num_meas
         tmp = np.random.permutation(N)
         k = tmp[0:mini_batch_size]
         batch = np.zeros(N)
@@ -148,10 +149,10 @@ class Deblur(Problem):
         return batch
 
     def full_grad(self, z):
-        return self.SCb.T.dot(self.SCb.dot(z) - self.y)
+        return (self.SCb.T.dot(self.SCb.dot(z.reshape(self.H*self.W,)) - self.y)).reshape(self.H,self.W)
 
     def stoch_grad(self, z, mini_batch_size):
         index = self.batch(mini_batch_size)
-        res = self.SCb.dot(z) - self.y
+        res = self.SCb.dot(z.reshape(self.H*self.W,)) - self.y
         weights = np.multiply(index, res)
-        return self.SCb.T.dot(weights)
+        return (self.SCb.T.dot(weights)).reshape(self.H,self.W)
