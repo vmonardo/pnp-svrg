@@ -40,7 +40,7 @@ class CSMRI(Problem):
         mask = np.random.choice([0, 1], size=(H, W), p=[1-sample_prob, sample_prob])
 
         forig = np.fft.fft2(self.original)
-        np.random.seed(0)
+#         np.random.seed(0)
         noises = np.random.normal(0, sigma, (H, W))
 
         y0 = forig + noises
@@ -114,31 +114,41 @@ class Deblur(Problem):
         self.sigma = sigma
         self.subsampling = subsampling
         
-        noises = np.random.normal(0, sigma, (N,))
-        
         ## Create cirulant matrix
-        vb = np.matrix.flatten(np.asarray(blur)) # flatten blurring kernel into a vector
+#         vb = np.matrix.flatten(np.asarray(blur)) # flatten blurring kernel into a vector
+
+        # Create dummy blurring kernel for testing
+        vb = np.zeros((N,))
+        vb[2]=1
+        vb[3]=1
+        vb[10]=1
+        ## Create cirulant matrix
         Cb = scipy.linalg.circulant(vb) # create circulant matrix of v_b
 
         ## Vectorize orig image
         vorig = np.matrix.flatten(np.asarray(self.original))
         
         ## Create noisy measurements
-        y0 = Cb.dot(vorig) + noises
-        y = y0[::subsampling]
+        y0 = Cb.dot(vorig)
+        # reshape to image dimensions
+        y1 = y0.reshape(H,W)
+        # subsample in each direction
+        ysub = y1[::subsampling,::subsampling]
+        # create noise
+        noises = np.random.normal(0, sigma, ysub.shape)
 
-        ## Precompute essential matrices
-        idx = np.arange(0, H*W, subsampling)
-        S_Cb = Cb[idx,:]
+        ysq = ysub + noises
+        y = np.matrix.flatten(ysq)
         
-        ## Create initialization
-        S_Cb_pinv = np.linalg.pinv(S_Cb)
-        xinit = S_Cb_pinv.dot(y)
+        xinit = np.zeros((H,W))
+        xinit[::subsampling,::subsampling] = ysq
+        xinit[::subsampling,1::subsampling] = ysq
+        xinit[1::subsampling,::subsampling] = ysq
+        xinit[1::subsampling,1::subsampling] = ysq
         
-        self.num_meas = S_Cb.shape[0]
-        self.noisy = xinit.reshape(H,W)
+        self.num_meas = y.size
+        self.noisy = xinit
         self.y = y
-        self.SCb = S_Cb
         
     def batch(self, mini_batch_size):
         N = self.num_meas
