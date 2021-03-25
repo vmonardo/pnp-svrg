@@ -124,7 +124,8 @@ class Deblur(Problem):
         vb[10]=1
         ## Create cirulant matrix
         Cb = scipy.linalg.circulant(vb) # create circulant matrix of v_b
-
+        self.Cb = Cb
+        
         ## Vectorize orig image
         vorig = np.matrix.flatten(np.asarray(self.original))
         
@@ -138,13 +139,11 @@ class Deblur(Problem):
         noises = np.random.normal(0, sigma, ysub.shape)
 
         ysq = ysub + noises
+       
         y = np.matrix.flatten(ysq)
         
-        xinit = np.zeros((H,W))
-        xinit[::subsampling,::subsampling] = ysq
-        xinit[::subsampling,1::subsampling] = ysq
-        xinit[1::subsampling,::subsampling] = ysq
-        xinit[1::subsampling,1::subsampling] = ysq
+        xinit = scipy.ndimage.zoom(ysq, subsampling, order=0)
+        xinit = (xinit - xinit.min()) / (xinit.max() - xinit.min())
         
         self.num_meas = y.size
         self.noisy = xinit
@@ -159,13 +158,42 @@ class Deblur(Problem):
         return batch
 
     def full_grad(self, z):
-        return (self.SCb.T.dot(self.SCb.dot(z.reshape(self.H*self.W,)) - self.y)).reshape(self.H,self.W)
+        # get iterate as an array
+        Z_flat = z.reshape(self.H*self.W,)
+        # multiply by circulant blurring kernel
+        CbZ_flat = self.Cb.dot(Z_flat)
+        # get as an image
+        CbZ_sq = CbZ_flat.reshape(self.H,self.W)
+        # subsample the image
+        CbZ_sq_subsamp = CbZ_sq[::self.subsampling,::self.subsampling]
+        # flatten image
+        CbZ_sq_subsamp_flat = np.matrix.flatten(CbZ_sq_subsamp)
+        # take residual
+        res = CbZ_sq_subsamp_flat - self.y
+        # make a square
+        res_sq = res.reshape(self.H//self.subsampling, self.W//self.subsampling)
+        # upsample
+        res_upsamp = scipy.ndimage.zoom(res_sq, self.subsampling, order=2)
+        # flatten
+        res_upsamp_flat = np.matrix.flatten(res_upsamp)
+        # multiply by transpose, reshape
+        return (self.Cb.T.dot(res_upsamp_flat)).reshape(self.H,self.W)
 
     def stoch_grad(self, z, mini_batch_size):
         index = self.batch(mini_batch_size)
-        res = self.SCb.dot(z.reshape(self.H*self.W,)) - self.y
+        CbZ_flat = self.Cb.dot(z.reshape(self.H*self.W,))
+        # get as an image
+        CbZ_sq = CbZ_flat.reshape(self.H,self.W)
+        # subsample the image
+        CbZ_sq_subsamp = CbZ_sq[::self.subsampling,::self.subsampling]
+        # flatten image
+        CbZ_sq_subsamp_flat = np.matrix.flatten(CbZ_sq_subsamp)
+        # take residual
+        res = CbZ_sq_subsamp_flat - self.y
         weights = np.multiply(index, res)
-        return (self.SCb.T.dot(weights)).reshape(self.H,self.W)
+        weights_sq = weights.reshape(self.H//self.subsampling, self.W//self.subsampling)
+        weights_up = scipy.ndimage.zoom(weights_sq, self.subsampling, order=2)
+        return (self.Cb.T.dot(np.matrix.flatten(weights_up))).reshape(self.H,self.W)
     
 class PhaseRetrieval(Problem):
     def __init__(self, img_path=None, img=None, H=256, W=256, 
