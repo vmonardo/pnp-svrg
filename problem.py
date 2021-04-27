@@ -98,7 +98,8 @@ class CSMRI(Problem):
 
 class Deblur(Problem):
     def __init__(self, img_path=None, img=None, H=64, W=64, 
-                       kernel_path=None, kernel=None, sigma=1.0, subsampling=2, 
+                       kernel_path=None, kernel=None, sigma=1.0, scale_percent=50, 
+                       blur_size_x=9, blur_size_y=9, 
                        lr_decay=0.999):
         super().__init__(img_path, img, H, W, lr_decay)
 
@@ -112,37 +113,29 @@ class Deblur(Problem):
         
         N = H*W
         self.sigma = sigma
-        self.subsampling = subsampling
+        self.blur_size_x = blur_size_x
+        self.blur_size_y = blur_size_y
+        img = self.original
         
-        ## Create cirulant matrix
-#         vb = np.matrix.flatten(np.asarray(blur)) # flatten blurring kernel into a vector
-
-        # Create dummy blurring kernel for testing
-        vb = np.zeros((N,))
-        vb[2]=1
-        vb[3]=1
-        vb[10]=1
-        ## Create cirulant matrix
-        Cb = scipy.linalg.circulant(vb) # create circulant matrix of v_b
-        self.Cb = Cb
+        # Blur the image with a Gaussian kernel
+        blurred = cv2.GaussianBlur(img, (blur_size_x, blur_size_y), 0)
         
-        ## Vectorize orig image
-        vorig = np.matrix.flatten(np.asarray(self.original))
+        width = int(img.shape[1] * scale_percent / 100)
+        height = int(img.shape[0] * scale_percent / 100)
+        dim = (width, height)
+        self.dim = dim
         
-        ## Create noisy measurements
-        y0 = Cb.dot(vorig)
-        # reshape to image dimensions
-        y1 = y0.reshape(H,W)
-        # subsample in each direction
-        ysub = y1[::subsampling,::subsampling]
+        # Downsample the image
+        y0 = cv2.resize(blurred, dim, interpolation = cv2.INTER_AREA)
+        
         # create noise
-        noises = np.random.normal(0, sigma, ysub.shape)
+        noises = np.random.normal(0, sigma, y0.shape)
 
-        ysq = ysub + noises
-       
-        y = np.matrix.flatten(ysq)
+        # add noise
+        y = y0 + noises
         
-        xinit = scipy.ndimage.zoom(ysq, subsampling, order=0)
+        # Initialize by upsampling image
+        xinit = cv2.resize(y, (self.H,self.W), interpolation = cv2.INTER_AREA)
         xinit = (xinit - xinit.min()) / (xinit.max() - xinit.min())
         
         self.num_meas = y.size
@@ -153,47 +146,23 @@ class Deblur(Problem):
         N = self.num_meas
         tmp = np.random.permutation(N)
         k = tmp[0:mini_batch_size]
-        batch = np.zeros(N)
-        batch[k] = 1 
-        return batch
+        return k
 
     def full_grad(self, z):
-        # get iterate as an array
-        Z_flat = z.reshape(self.H*self.W,)
-        # multiply by circulant blurring kernel
-        CbZ_flat = self.Cb.dot(Z_flat)
-        # get as an image
-        CbZ_sq = CbZ_flat.reshape(self.H,self.W)
-        # subsample the image
-        CbZ_sq_subsamp = CbZ_sq[::self.subsampling,::self.subsampling]
-        # flatten image
-        CbZ_sq_subsamp_flat = np.matrix.flatten(CbZ_sq_subsamp)
-        # take residual
-        res = CbZ_sq_subsamp_flat - self.y
-        # make a square
-        res_sq = res.reshape(self.H//self.subsampling, self.W//self.subsampling)
-        # upsample
-        res_upsamp = scipy.ndimage.zoom(res_sq, self.subsampling, order=2)
-        # flatten
-        res_upsamp_flat = np.matrix.flatten(res_upsamp)
-        # multiply by transpose, reshape
-        return (self.Cb.T.dot(res_upsamp_flat)).reshape(self.H,self.W)
+        Z_blurred = cv2.GaussianBlur(z, (self.blur_size_x, self.blur_size_y), 0)
+        Z_down = cv2.resize(Z_blurred, self.dim, interpolation = cv2.INTER_AREA)
+        res = Z_down - self.y
+        res_up = cv2.resize(res, (self.H,self.W), interpolation = cv2.INTER_AREA)
+        return cv2.GaussianBlur(res_up, (self.blur_size_x, self.blur_size_y), 0)
 
     def stoch_grad(self, z, mini_batch_size):
         index = self.batch(mini_batch_size)
-        CbZ_flat = self.Cb.dot(z.reshape(self.H*self.W,))
-        # get as an image
-        CbZ_sq = CbZ_flat.reshape(self.H,self.W)
-        # subsample the image
-        CbZ_sq_subsamp = CbZ_sq[::self.subsampling,::self.subsampling]
-        # flatten image
-        CbZ_sq_subsamp_flat = np.matrix.flatten(CbZ_sq_subsamp)
-        # take residual
-        res = CbZ_sq_subsamp_flat - self.y
-        weights = np.multiply(index, res)
-        weights_sq = weights.reshape(self.H//self.subsampling, self.W//self.subsampling)
-        weights_up = scipy.ndimage.zoom(weights_sq, self.subsampling, order=2)
-        return (self.Cb.T.dot(np.matrix.flatten(weights_up))).reshape(self.H,self.W)
+        res = np.zeros(self.y.shape)
+        Z_blurred = cv2.GaussianBlur(z, (self.blur_size_x, self.blur_size_y), 0)
+        Z_down = cv2.resize(Z_blurred, self.dim, interpolation = cv2.INTER_AREA)
+        res.ravel()[index] = Z_down.ravel()[index] - self.y.ravel()[index]
+        res_up = cv2.resize(res.reshape(self.dim), (self.H,self.W), interpolation = cv2.INTER_AREA)
+        return cv2.GaussianBlur(res_up, (self.blur_size_x, self.blur_size_y), 0)
     
 class PhaseRetrieval(Problem):
     def __init__(self, img_path=None, img=None, H=256, W=256, 

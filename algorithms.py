@@ -91,6 +91,9 @@ def pnp_gd(problem, denoiser, eta, tt, verbose=True):
         # Gradient update
         z -= (eta*problem.lr_decay**denoiser.t)*v
 
+        if verbose:
+            print(str(i) + " Before denoising:  " + str(peak_signal_noise_ratio(problem.original, z)))
+            
         # Denoise
         z = denoiser.denoise(noisy=z)
         
@@ -104,7 +107,7 @@ def pnp_gd(problem, denoiser, eta, tt, verbose=True):
         psnr_per_iter.append(peak_signal_noise_ratio(problem.original, z))
 
         if verbose:
-            print(str(i) + " " + str(psnr_per_iter[-1]))
+            print(str(i) + " After denoising:  " + str(psnr_per_iter[-1]))
 
         i += 1
 
