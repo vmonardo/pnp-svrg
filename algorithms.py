@@ -37,7 +37,7 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True):
             start_time = time.time()
 
             # calculate stochastic variance-reduced gradient (SVRG)
-            v = problem.stoch_grad(z, mini_batch_size) - problem.stoch_grad(w, mini_batch_size) + mu
+            v = (problem.stoch_grad(z, mini_batch_size) - problem.stoch_grad(w, mini_batch_size)) / mini_batch_size + mu
 
             # Gradient update
             z -= (eta*problem.lr_decay**denoiser.t)*v
