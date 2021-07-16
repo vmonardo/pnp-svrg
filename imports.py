@@ -38,3 +38,5 @@ from algorithms import *
 from problem import *
 
 from scipy.linalg import circulant
+
+import pylops

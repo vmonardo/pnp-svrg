@@ -1,4 +1,5 @@
 from imports import *
+import pylops
 
 class Problem():
     def __init__(self, img_path, img, H, W, lr_decay=1):
@@ -98,8 +99,7 @@ class CSMRI(Problem):
 
 class Deblur(Problem):
     def __init__(self, img_path=None, img=None, H=64, W=64, 
-                       kernel_path=None, kernel=None, sigma=1.0, scale_percent=50, 
-                       blur_size_x=9, blur_size_y=9, 
+                       kernel_path=None, kernel=None, sigma=0.0, scale_percent=50, 
                        lr_decay=0.999):
         super().__init__(img_path, img, H, W, lr_decay)
 
@@ -111,22 +111,32 @@ class Deblur(Problem):
         else:
             raise Exception('Need to pass in blur kernel path or kernel')
         
-        N = H*W
         self.sigma = sigma
-        self.blur_size_x = blur_size_x
-        self.blur_size_y = blur_size_y
+        self.blur = blur
         img = self.original
+        nz, nx = img.shape
+        self.dim_old = (nz, nx)
         
         # Blur the image with blurring kernel
         blurred = fft_blur(img, blur)
 
         width = int(img.shape[1] * scale_percent / 100)
         height = int(img.shape[0] * scale_percent / 100)
-        dim = (width, height)
-        self.dim = dim
-        
-        # Downsample the image
-        y0 = cv2.resize(blurred, dim, interpolation = cv2.INTER_AREA)
+        dim_new = (width, height)
+        self.dim_new = dim_new
+
+        # Create grid to instantiate downsized image
+        zz = np.linspace(0,nz - 2,width)
+        xx = np.linspace(0,nx - 2,height)
+        X, Z = np.meshgrid(zz, xx)
+
+        iava = np.vstack([Z.ravel(), X.ravel()])
+
+        # create downsizing linear operator 
+        Bop = pylops.signalprocessing.Bilinear(iava, (nz, nx))
+        self.Bop = Bop
+        # create downsized, blurred image
+        y0 = Bop * blurred.ravel()
         
         # create noise
         noises = np.random.normal(0, sigma, y0.shape)
@@ -134,13 +144,13 @@ class Deblur(Problem):
         # add noise
         y = y0 + noises
         
-        # Initialize by upsampling image
-        # xinit = cv2.resize(y, (self.H,self.W), interpolation = cv2.INTER_AREA)
+        # Initialize using adjoint of downsizing operator
+        xinit = Bop.H * y
         xinit = (xinit - xinit.min()) / (xinit.max() - xinit.min())
         
         self.num_meas = y.size
-        self.noisy = xinit
-        self.y = y
+        self.noisy = xinit.reshape(nz, nx)
+        self.y = y.reshape(dim_new)
         
     def batch(self, mini_batch_size):
         N = self.num_meas
@@ -148,13 +158,13 @@ class Deblur(Problem):
         k = tmp[0:mini_batch_size]
         return k
 
-    ## TODO : REMOVE ALL CV2 CALLS AND USE CIRC CONVOLUTION / CIRCULANT MATRICES
-    # def full_grad(self, z):
-    #     Z_blurred = cv2.GaussianBlur(z, (self.blur_size_x, self.blur_size_y), 0)
-    #     Z_down = cv2.resize(Z_blurred, self.dim, interpolation = cv2.INTER_AREA)
-    #     res = Z_down - self.y
-    #     res_up = cv2.resize(res, (self.H,self.W), interpolation = cv2.INTER_AREA)
-    #     return cv2.GaussianBlur(res_up, (self.blur_size_x, self.blur_size_y), 0)
+    ## nab l(x) = B^T S^T (S B Z - y) / m
+    def full_grad(self, z):
+        Z_blurred = fft_blur(z, self.blur)
+        Z_down = (self.Bop * Z_blurred.flatten()).reshape(self.dim_new)
+        res = Z_down - self.y
+        res_up = (self.Bop.H * res.flatten()).reshape(self.dim_old)
+        return fft_blur(res_up, self.blur.T) 
 
     # def stoch_grad(self, z, mini_batch_size):
     #     index = self.batch(mini_batch_size)
