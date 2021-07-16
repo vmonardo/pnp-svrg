@@ -84,3 +84,8 @@ def denoise_rgb(img_path):
     denoised = np.rollaxis(np.array([out0, out1, out2]), 0, 3)
     
     return original, noisy, denoised
+
+def fft_blur(A, B):
+    # assume two objects have same shame
+    H, W = A.shape[:2]
+    return np.real(np.fft.ifft( np.fft.fft(A.flatten())*np.fft.fft(B.flatten()) )).reshape(H,W) /  H / W

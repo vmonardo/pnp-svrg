@@ -1,3 +1,5 @@
 .ipynb_checkpoints
 *.pyc
 test.png
+.venv
+circulant-matrices.py

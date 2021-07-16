@@ -117,9 +117,9 @@ class Deblur(Problem):
         self.blur_size_y = blur_size_y
         img = self.original
         
-        # Blur the image with a Gaussian kernel
-        blurred = cv2.GaussianBlur(img, (blur_size_x, blur_size_y), 0)
-        
+        # Blur the image with blurring kernel
+        blurred = fft_blur(img, blur)
+
         width = int(img.shape[1] * scale_percent / 100)
         height = int(img.shape[0] * scale_percent / 100)
         dim = (width, height)
@@ -135,7 +135,7 @@ class Deblur(Problem):
         y = y0 + noises
         
         # Initialize by upsampling image
-        xinit = cv2.resize(y, (self.H,self.W), interpolation = cv2.INTER_AREA)
+        # xinit = cv2.resize(y, (self.H,self.W), interpolation = cv2.INTER_AREA)
         xinit = (xinit - xinit.min()) / (xinit.max() - xinit.min())
         
         self.num_meas = y.size
@@ -148,21 +148,22 @@ class Deblur(Problem):
         k = tmp[0:mini_batch_size]
         return k
 
-    def full_grad(self, z):
-        Z_blurred = cv2.GaussianBlur(z, (self.blur_size_x, self.blur_size_y), 0)
-        Z_down = cv2.resize(Z_blurred, self.dim, interpolation = cv2.INTER_AREA)
-        res = Z_down - self.y
-        res_up = cv2.resize(res, (self.H,self.W), interpolation = cv2.INTER_AREA)
-        return cv2.GaussianBlur(res_up, (self.blur_size_x, self.blur_size_y), 0)
+    ## TODO : REMOVE ALL CV2 CALLS AND USE CIRC CONVOLUTION / CIRCULANT MATRICES
+    # def full_grad(self, z):
+    #     Z_blurred = cv2.GaussianBlur(z, (self.blur_size_x, self.blur_size_y), 0)
+    #     Z_down = cv2.resize(Z_blurred, self.dim, interpolation = cv2.INTER_AREA)
+    #     res = Z_down - self.y
+    #     res_up = cv2.resize(res, (self.H,self.W), interpolation = cv2.INTER_AREA)
+    #     return cv2.GaussianBlur(res_up, (self.blur_size_x, self.blur_size_y), 0)
 
-    def stoch_grad(self, z, mini_batch_size):
-        index = self.batch(mini_batch_size)
-        res = np.zeros(self.y.shape)
-        Z_blurred = cv2.GaussianBlur(z, (self.blur_size_x, self.blur_size_y), 0)
-        Z_down = cv2.resize(Z_blurred, self.dim, interpolation = cv2.INTER_AREA)
-        res.ravel()[index] = Z_down.ravel()[index] - self.y.ravel()[index]
-        res_up = cv2.resize(res.reshape(self.dim), (self.H,self.W), interpolation = cv2.INTER_AREA)
-        return cv2.GaussianBlur(res_up, (self.blur_size_x, self.blur_size_y), 0)
+    # def stoch_grad(self, z, mini_batch_size):
+    #     index = self.batch(mini_batch_size)
+    #     res = np.zeros(self.y.shape)
+    #     Z_blurred = cv2.GaussianBlur(z, (self.blur_size_x, self.blur_size_y), 0)
+    #     Z_down = cv2.resize(Z_blurred, self.dim, interpolation = cv2.INTER_AREA)
+    #     res.ravel()[index] = Z_down.ravel()[index] - self.y.ravel()[index]
+    #     res_up = cv2.resize(res.reshape(self.dim), (self.H,self.W), interpolation = cv2.INTER_AREA)
+    #     return cv2.GaussianBlur(res_up, (self.blur_size_x, self.blur_size_y), 0)
     
 class PhaseRetrieval(Problem):
     def __init__(self, img_path=None, img=None, H=256, W=256, 
