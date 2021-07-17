@@ -106,6 +106,9 @@ class Deblur(Problem):
         # problem setup
         if kernel_path is not None:
             blur = np.array(Image.open(kernel_path).resize((H, W)))
+        elif kernel == "Identity":
+            blur = np.zeros(H*W)
+            blur[0] = 1
         elif kernel is not None:
             blur = kernel
         else:
@@ -120,37 +123,48 @@ class Deblur(Problem):
         # Blur the image with blurring kernel
         blurred = fft_blur(img, blur)
 
-        width = int(img.shape[1] * scale_percent / 100)
-        height = int(img.shape[0] * scale_percent / 100)
-        dim_new = (width, height)
-        self.dim_new = dim_new
+        if scale_percent == 100:
+            width, height = nz, nx
+            self.dim_new = self.dim_old
+            Bop = pylops.Identity(width*height)
+        else: 
+            width = int(img.shape[1] * scale_percent / 100)
+            height = int(img.shape[0] * scale_percent / 100)
+            self.dim_new = (width, height)
 
-        # Create grid to instantiate downsized image
-        zz = np.linspace(0,nz - 2,width)
-        xx = np.linspace(0,nx - 2,height)
-        X, Z = np.meshgrid(zz, xx)
+            # Create grid to instantiate downsized image
+            zz = np.linspace(0,nz - 2,width)    
+            xx = np.linspace(0,nx - 2,height)   
+            X, Z = np.meshgrid(zz, xx)
 
-        iava = np.vstack([Z.ravel(), X.ravel()])
+            iava = np.vstack([Z.ravel(), X.ravel()])
 
-        # create downsizing linear operator 
-        Bop = pylops.signalprocessing.Bilinear(iava, (nz, nx))
+            # create downsizing linear operator 
+            Bop = pylops.signalprocessing.Bilinear(iava, (nz, nx))
+            
         self.Bop = Bop
         # create downsized, blurred image
         y0 = Bop * blurred.ravel()
-        
+
         # create noise
         noises = np.random.normal(0, sigma, y0.shape)
 
         # add noise
         y = y0 + noises
         
-        # Initialize using adjoint of downsizing operator
-        xinit = Bop.H * y
-        xinit = (xinit - xinit.min()) / (xinit.max() - xinit.min())
+        # Initialize using adjoint of downsizing operator the deblur
+        # xhat = Bop.H * y
+        xhat = pylops.optimization.leastsquares.NormalEquationsInversion(Bop, None, y,
+                                                                 epsRs=[np.sqrt(0.001)],
+                                                                 returninfo=False,
+                                                                 **dict(maxiter=100))
+
+        xinit = np.real(np.fft.ifft( np.fft.fft(xhat.flatten())/np.fft.fft(blur.flatten()) )).reshape(self.dim_old) * self.H * self.W
+        # xinit = (xinit - xinit.min()) / (xinit.max() - xinit.min())
         
         self.num_meas = y.size
         self.noisy = xinit.reshape(nz, nx)
-        self.y = y.reshape(dim_new)
+        self.y = y.reshape(self.dim_new) 
         
     def batch(self, mini_batch_size):
         N = self.num_meas
@@ -164,7 +178,7 @@ class Deblur(Problem):
         Z_down = (self.Bop * Z_blurred.flatten()).reshape(self.dim_new)
         res = Z_down - self.y
         res_up = (self.Bop.H * res.flatten()).reshape(self.dim_old)
-        return fft_blur(res_up, self.blur.T) 
+        return fft_blur(res_up, np.roll(np.flip(self.blur),1))
 
     # def stoch_grad(self, z, mini_batch_size):
     #     index = self.batch(mini_batch_size)
