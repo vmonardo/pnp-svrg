@@ -37,7 +37,7 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True):
             start_time = time.time()
 
             # calculate stochastic variance-reduced gradient (SVRG)
-            v = (problem.stoch_grad(z, mini_batch_size) - problem.stoch_grad(w, mini_batch_size)) / mini_batch_size + mu
+            v = (problem.stoch_grad(z, mini_batch_size) - problem.stoch_grad(w, mini_batch_size)) + mu
 
             # Gradient update
             z -= (eta*problem.lr_decay**denoiser.t)*v
@@ -270,8 +270,8 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True):
             denoiser.t += 1
 
             # update recursion points
-            v_previous = v_next
-            w_previous = z 
+            v_previous = np.copy(v_next)
+            w_previous = np.copy(z) 
             
             # stop timing
             time_per_iter.append(time.time() - start_time)
@@ -319,7 +319,7 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
         start_time = time.time()
 
         # calculate stochastic gradient
-        rand_ind = np.random.choice(hist_size, 1)
+        rand_ind = np.random.choice(hist_size, 1).item()
         grad_history[rand_ind] = problem.stoch_grad(z, mini_batch_size)
         
         v = grad_history[rand_ind] - prev_stoch + sum(grad_history)/hist_size
