@@ -122,6 +122,7 @@ class Deblur(Problem):
         
         # Blur the image with blurring kernel
         blurred = fft_blur(img, blur)
+        self.blurred = blurred
 
         if scale_percent == 100:
             width, height = nz, nx
@@ -133,8 +134,8 @@ class Deblur(Problem):
             self.dim_new = (width, height)
 
             # Create grid to instantiate downsized image
-            zz = np.linspace(0,nz - 2,width)    
-            xx = np.linspace(0,nx - 2,height)   
+            zz = np.linspace(0.00001,nz - 1.00001,width)    
+            xx = np.linspace(0.00001,nx - 1.00001,height)   
             X, Z = np.meshgrid(zz, xx)
 
             iava = np.vstack([Z.ravel(), X.ravel()])
@@ -153,15 +154,24 @@ class Deblur(Problem):
         y = y0 + noises
         
         # Initialize using adjoint of downsizing operator the deblur
-        # xhat = Bop.H * y
-        xhat = pylops.optimization.leastsquares.NormalEquationsInversion(Bop, None, y,
-                                                                 epsRs=[np.sqrt(0.001)],
+        # blur_hat= Bop * blur.ravel()
+        # deblurred_hat = np.real(np.fft.ifft( np.fft.fft(y.flatten())/np.fft.fft(blur_hat.flatten()) )).reshape(self.dim_new) * self.dim_new[0] * self.dim_new[1]
+        # xinit = Bop.H * deblurred_hat.ravel()
+
+        D2op = pylops.Laplacian((nz, nx), weights=(1, 1), dtype='float64')
+
+        xhat = pylops.optimization.leastsquares.NormalEquationsInversion(Bop, [D2op], y.ravel(),
+                                                                 epsRs=[np.sqrt(0.01)],
                                                                  returninfo=False,
                                                                  **dict(maxiter=100))
 
-        xinit = np.real(np.fft.ifft( np.fft.fft(xhat.flatten())/np.fft.fft(blur.flatten()) )).reshape(self.dim_old) * self.H * self.W
+        self.xhat = xhat.reshape(self.dim_old)
+        xinit = np.real(np.fft.ifft( np.fft.fft(xhat)/np.fft.fft(blur.flatten()) )).reshape(self.dim_old) * self.H * self.W
         # xinit = (xinit - xinit.min()) / (xinit.max() - xinit.min())
         
+        # xhat = Bop.H * y
+        # xinit = np.real(np.fft.ifft( np.fft.fft(xhat)/np.fft.fft(blur.flatten()) )).reshape(self.dim_old) * self.H * self.W
+
         self.num_meas = y.size
         self.noisy = xinit.reshape(nz, nx)
         self.y = y.reshape(self.dim_new) 
@@ -175,19 +185,23 @@ class Deblur(Problem):
     ## nab l(x) = B^T S^T (S B Z - y) / m
     def full_grad(self, z):
         Z_blurred = fft_blur(z, self.blur)
-        Z_down = (self.Bop * Z_blurred.flatten()).reshape(self.dim_new)
+        Z_down = (self.Bop * Z_blurred.flatten()).reshape(self.dim_new) 
         res = Z_down - self.y
         res_up = (self.Bop.H * res.flatten()).reshape(self.dim_old)
-        return fft_blur(res_up, np.roll(np.flip(self.blur),1))
+        return fft_blur(res_up, np.roll(np.flip(self.blur),1)) 
 
-    # def stoch_grad(self, z, mini_batch_size):
-    #     index = self.batch(mini_batch_size)
-    #     res = np.zeros(self.y.shape)
-    #     Z_blurred = cv2.GaussianBlur(z, (self.blur_size_x, self.blur_size_y), 0)
-    #     Z_down = cv2.resize(Z_blurred, self.dim, interpolation = cv2.INTER_AREA)
-    #     res.ravel()[index] = Z_down.ravel()[index] - self.y.ravel()[index]
-    #     res_up = cv2.resize(res.reshape(self.dim), (self.H,self.W), interpolation = cv2.INTER_AREA)
-    #     return cv2.GaussianBlur(res_up, (self.blur_size_x, self.blur_size_y), 0)
+    ## nab l(x) = B^T S^T (S B Z - y) / m
+    def stoch_grad(self, z, mini_batch_size):
+        index = self.batch(mini_batch_size)
+        res = np.zeros(self.y.shape)
+        Z_blurred = fft_blur(z, self.blur)
+        # Z_blurred = cv2.GaussianBlur(z, (self.blur_size_x, self.blur_size_y), 0)
+        Z_down = (self.Bop * Z_blurred.flatten()).reshape(self.dim_new)
+        # Z_down = cv2.resize(Z_blurred, self.dim, interpolation = cv2.INTER_AREA)
+        res.ravel()[index] = Z_down.ravel()[index] - self.y.ravel()[index]
+        res_up = (self.Bop.H * res.flatten()).reshape(self.dim_old)
+        # res_up = cv2.resize(res.reshape(self.dim), (self.H,self.W), interpolation = cv2.INTER_AREA)
+        return fft_blur(res_up, np.roll(np.flip(self.blur),1))
     
 class PhaseRetrieval(Problem):
     def __init__(self, img_path=None, img=None, H=256, W=256, 
