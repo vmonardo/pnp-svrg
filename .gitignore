@@ -4,5 +4,7 @@ test.png
 .venv/
 circulant-matrices.py
 .vscode/
+.vscode/settings.json
 flickr30k/test/
 flickr30k/train/
+.idea/
