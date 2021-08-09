@@ -2,6 +2,7 @@
 *.pyc
 test.png
 .venv/
+venv/
 circulant-matrices.py
 .vscode/
 .vscode/settings.json
