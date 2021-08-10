@@ -34,8 +34,8 @@ from spectral import *
 from cnn import *
 from denoise import *
 from utils import *
-from algorithms import *
-from problem import *
+from algorithms.algorithms import *
+from problems.problem import *
 
 from scipy.linalg import circulant
 

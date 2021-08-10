@@ -1,4 +1,4 @@
-from problem import Problem
+from problems.problem import Problem
 from imports import *
 
 class CSMRI(Problem):
