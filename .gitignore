@@ -9,3 +9,4 @@ circulant-matrices.py
 flickr30k/test/
 flickr30k/train/
 .idea/
+.gitignore

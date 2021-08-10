@@ -1,4 +1,9 @@
-from imports import *
+import numpy as np
+from skimage.metrics import peak_signal_noise_ratio
+from PIL import Image
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from IPython.display import HTML
 
 def show_multiple(images, ax=plt):
     cols = len(images)
@@ -58,32 +63,32 @@ def gif(images):
 
     return HTML(anim.to_html5_video())
 
+### REWRITE TO GENERALIZE FOR OTHER PROBLEMS
+# def denoise_rgb(img_path):
+#     from algorithms import pnp_svrg
+#     from denoise import CNNDenoiser
+#     from problem import CSMRI
 
-def denoise_rgb(img_path):
-    from algorithms import pnp_svrg
-    from denoise import CNNDenoiser
-    from problem import CSMRI
-
-    def denoise_slice(problem, denoiser):
-        return pnp_svrg(problem, denoiser=denoiser, eta=20e3, tt=20, T2=10, 
-                        mini_batch_size=int(20e3), verbose=False)[0]
+#     def denoise_slice(problem, denoiser):
+#         return pnp_svrg(problem, denoiser=denoiser, eta=20e3, tt=20, T2=10, 
+#                         mini_batch_size=int(20e3), verbose=False)[0]
     
-    img = np.array(Image.open(img_path).resize((256,256)), dtype=float)
+#     img = np.array(Image.open(img_path).resize((256,256)), dtype=float)
 
-    slice0 = CSMRI(img=img[:,:,0])
-    slice1 = CSMRI(img=img[:,:,1])
-    slice2 = CSMRI(img=img[:,:,2])
+#     slice0 = CSMRI(img=img[:,:,0])
+#     slice1 = CSMRI(img=img[:,:,1])
+#     slice2 = CSMRI(img=img[:,:,2])
 
-    noisy = np.rollaxis(np.array([slice0.noisy, slice1.noisy, slice2.noisy]), 0, 3)
-    original = np.rollaxis(np.array([slice0.original, slice1.original, slice2.original]), 0, 3)
+#     noisy = np.rollaxis(np.array([slice0.noisy, slice1.noisy, slice2.noisy]), 0, 3)
+#     original = np.rollaxis(np.array([slice0.original, slice1.original, slice2.original]), 0, 3)
 
-    denoiser = CNNDenoiser()
+#     denoiser = CNNDenoiser()
 
-    out0, out1, out2 = denoise_slice(slice0, denoiser), denoise_slice(slice1, denoiser), denoise_slice(slice2, denoiser)
+#     out0, out1, out2 = denoise_slice(slice0, denoiser), denoise_slice(slice1, denoiser), denoise_slice(slice2, denoiser)
     
-    denoised = np.rollaxis(np.array([out0, out1, out2]), 0, 3)
+#     denoised = np.rollaxis(np.array([out0, out1, out2]), 0, 3)
     
-    return original, noisy, denoised
+#     return original, noisy, denoised
 
 def fft_blur(A, B):
     # assume two objects have same shame

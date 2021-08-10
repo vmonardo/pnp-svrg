@@ -1,5 +1,5 @@
 from problems.problem import Problem
-from imports import *
+import numpy as np
 
 class PhaseRetrieval(Problem):
     def __init__(self, img_path=None, img=None, H=256, W=256, 
@@ -22,7 +22,6 @@ class PhaseRetrieval(Problem):
 
     def batch(self, mini_batch_size):
         # Get batch indices in terms of (row, col)
-
         m = self.num_meas
         tmp = np.linspace(0, m - 1, m)
         batch_locs = np.random.choice(tmp, mini_batch_size, replace=False)

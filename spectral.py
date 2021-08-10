@@ -11,11 +11,6 @@ Real SN by convolution. Each layer has lipschtz constant of 1
 import torch
 from torch.nn.functional import conv2d
 from torch.nn.parameter import Parameter
-# import argparse
-# from ..train_realSN import opt
-
-# import torch.jit._unwrap_optional
-
 
 def normalize(tensor, eps=1e-12):
     norm = float(torch.sqrt(torch.sum(tensor * tensor)))
