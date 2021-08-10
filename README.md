@@ -4,14 +4,14 @@ This repository contains all code needed to reproduce experiments in "Plug-and-P
 
 If you find this code useful, please cite our paper:
 ```
-@article{monardo2021plug,
+@inproceedings{monardo2021plug,
   title={Plug-and-Play Image Reconstruction Meets Stochastic Variance-Reduced Gradient Methods},
   author={Monardo, Vincent and Iyer, Abhiram and Donegan, Sean and de Graef, Marc and Chi, Yuejie},
-  journal={preprint},
-  year={2021}
+  booktitle={ICIP 2021-2021 IEEE International Conference on Image Processing (ICIP)},
+  year={2021},
+  organization={IEEE}
 }
 ```
-
 
 ## Requirements
 
