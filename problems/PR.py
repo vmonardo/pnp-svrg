@@ -1,39 +1,81 @@
-from problems.problem import Problem
+#!/usr/bin/env python
+# coding=utf-8
+from PIL.Image import ENCODERS
+from problem import Problem
 import numpy as np
+from numpy import linalg as la
 
 class PhaseRetrieval(Problem):
-    def __init__(self, img_path=None, img=None, H=256, W=256, 
-                       num_meas=-1, sigma=1.0,
-                       lr_decay=0.999):
-        super().__init__(img_path, img, H, W)
+    def __init__(self, img_path=None, H=256, W=256, 
+                       num_meas=-1, sigma=1.0):
+        super().__init__(img_path, H, W)
+
+        # User specified parameters
         self.sigma = sigma
-        self.num_meas = num_meas
+        self.M = num_meas
+
         # problem setup
-        A = np.random.random((num_meas,H*W)) + np.random.random((num_meas,H*W)) * 1j
+        self.A = np.random.random((self.M,self.H*self.W)) + np.random.random((self.M,self.H*self.W)) * 1j
+        tmp = self.forward_model(self.X)
 
-        orig = np.matrix.flatten(self.original)
+        # create noise
+        noises = np.random.normal(0, self.sigma, tmp.shape)
 
-        y = np.dot(A, orig)
-        x_init = orig
+        self.Y = tmp + noises
+        self.Xinit = self.spec_init()
 
-        self.A = A
-        self.noisy = x_init.reshape(H, W)
-        self.y = y
+    def spec_init(self):
+        # create data matrix
+        D = np.conj(self.A.T) @ np.diag(self.Y) @ self.A / 2 / self.M
+        # find mean of measurements Y
+        l = np.sum(self.Y) / self.M
+        
+        # run power method to find top eigenvector and eigenvalue
+        tol = 1e-6
+        m = 0
+        mold = 1
+        y_old = np.zeros(self.N)
+        y_final = tol*np.ones(self.N) 
+    
+        while (np.abs(m - mold) > tol) and (la.norm(y_final - y_old) > tol):
+            mold = m
+            y_old = y_final
+            tmp = np.dot(D, y_final)
+            m = np.amax(tmp)
+            y_final = tmp / m
+        
+        # print(np.abs(np.dot(self.X / la.norm(self.X), y_final / la.norm(y_final)) ** 2 ))
+        return y_final * np.sqrt(m - l) 
 
-    def batch(self, mini_batch_size):
-        # Get batch indices in terms of (row, col)
-        m = self.num_meas
-        tmp = np.linspace(0, m - 1, m)
-        batch_locs = np.random.choice(tmp, mini_batch_size, replace=False)
+    def forward_model(self, w):
+        # Y = |Ax|
+        return np.absolute(self.A.dot(w)) 
 
-        return np.sort(batch_locs.astype(int))
+    def f(self, w):
+        # f(W) = 1 / 2*M || y - F{W} ||_F^2
+        # Compute data fidelity function value at a given point
+        return np.linalg.norm(self.Y - self.forward_model(w)) ** 2 / 2 / self.M
 
-    def full_grad(self, z):
-        Weight = np.diag(np.divide(np.linalg.norm(np.dot(self.A,np.matrix.flatten(z)), axis=1) - np.matrix.flatten(z)),np.linalg.norm(np.dot(self.A,np.matrix.flatten(z)), axis=1))
-        return (np.conj(self.A).T.dot(Weight).dot(self.A).dot(np.matrix.flatten(z))).reshape(self.H,self.W)
+    def grad_full(self, z):
+        tmp = self.A @ z
+        Weight = np.divide((np.absolute(tmp)  - self.Y),np.absolute(tmp))
+        return np.real(np.conj(self.A).T @ np.diag(Weight) @ tmp ) / self.M * 2
 
-    def stoch_grad(self, z, mini_batch_size):
-        Gamma = batch(mini_batch_size)
-        A_Gamma = self.A[Gamma]
-        W = np.diag(np.divide(np.linalg.norm(np.dot(A_Gamma,np.matrix.flatten(z)), axis=1) - np.matrix.flatten(z)),np.linalg.norm(np.dot(A_Gamma,np.matrix.flatten(z)), axis=1))
-        return (np.conj(A_Gamma).T.dot(W).dot(A_Gamma).dot(np.matrix.flatten(z))).reshape(self.H,self.W)
+    def grad_stoch(self, z, mb):
+        index = np.nonzero(mb)
+        A_gamma = self.A[index]
+        tmp = A_gamma @ z
+        Weight = np.divide((np.absolute(tmp)  - self.Y[index]),np.absolute(tmp))
+        return np.real(np.conj(A_gamma).T @ np.diag(Weight) @ tmp) / self.M * 2
+
+# use this for debugging
+if __name__ == '__main__':
+    height = 32
+    width = 32
+    alpha = 5       # ratio measurements / dimensions
+    rescale = 50
+    noise_level = 0.01
+
+    p = PhaseRetrieval(img_path='./data/Set12/01.png', H=height, W=width, num_meas = alpha*height*width, sigma=noise_level)
+    p.grad_full_check()
+    p.grad_stoch_check()

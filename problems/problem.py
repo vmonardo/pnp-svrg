@@ -28,10 +28,10 @@ class Problem():
     def select_mb(self, size):
         # Draw measurements uniformly at random for mini-batch stochastic gradient
         # Get batch indices in terms of (row, col)
-        batch = np.zeros((1, self.H*self.W))
+        batch = np.zeros((1, self.N))
         batch_locs = np.random.choice(self.N, size, replace=False)
         batch[0, batch_locs] = 1
-        return batch.reshape(self.H, self.W).astype(int)
+        return batch.astype(int)
 
     def f(self, z):
         # Method to compute the data fidelity loss at a given input
@@ -57,7 +57,7 @@ class Problem():
             grad[i] = (self.f(w+delta) -  self.f(w - delta)) / eps   
             delta[i] = 0
 
-        grad_comp = self.grad_full(w)
+        grad_comp = self.grad_full(w).flatten()
         if np.linalg.norm(grad - grad_comp) > 1e-2:
             print('Full Grad check failed!')
             print('norm: ', np.linalg.norm(grad - grad_comp))
@@ -77,10 +77,9 @@ class Problem():
         for i in range(self.M):
             mb = np.zeros(self.M, dtype=int)
             mb[i] = 1
-            mb = mb.reshape(self.lrH, self.lrW)
             grad_comp += self.grad_stoch(w, mb).flatten()
 
-        if np.linalg.norm(full_grad - grad_comp) > 1e-6:
+        if np.linalg.norm(full_grad.flatten() - grad_comp) > 1e-6:
             print('Stoch Grad check failed!')
             print('full grad: ', full_grad)
             print('grad comp: ', grad_comp)
@@ -96,5 +95,5 @@ if __name__ == '__main__':
     noise_level = 0.01
 
     p = Problem(img_path='./data/Set12/01.png', H=height, W=width)
-    x = p.select_mb_indices(height*width)
+    x = p.select_mb(height*width)
     print(sum(sum(x)), p.N)

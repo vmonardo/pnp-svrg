@@ -68,14 +68,14 @@ class CSMRI(Problem):
 
         # return inverse 2D Fourier Transform of residual
         # tmp = np.real(np.fft.ifft2(res))
-        tmp = np.real(np.conj(self.F) @ res @ np.conj(self.F.T)) / self.H / self.W
-        return tmp.reshape(self.N) * 2 
+        tmp = np.real(np.conj(self.F) @ res @ np.conj(self.F.T)) 
+        return tmp * 2 / self.H / self.W
 
     def grad_stoch(self, z, mb):
         # Get objects as images
         y = self.Y.reshape(self.H, self.W)
         w = z.reshape(self.H, self.W)
-        mb = np.multiply(mb, self.mask)
+        mb = np.multiply(mb.reshape(self.H, self.W), self.mask)
 
         # Get nonzero indices of the mini-batch
         index = np.nonzero(mb)
@@ -90,7 +90,7 @@ class CSMRI(Problem):
 
         # return inverse 2D Fourier Transform of residual
         op = np.real(np.einsum('ij,ik->jk',tmp,np.conj(F_j)))
-        return op.reshape(self.N) * 2 / self.H / self.W
+        return op * 2 / self.H / self.W
 
 # use this for debugging
 if __name__ == '__main__':

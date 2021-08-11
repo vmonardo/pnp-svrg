@@ -16,6 +16,7 @@ class Deblur(Problem):
 
         # User specified parameters
         self.sigma = sigma
+        self.scale_percent = scale_percent
 
         # Identify kernel type
         if kernel_path is not None:
@@ -30,29 +31,18 @@ class Deblur(Problem):
         # Calculate low-res image dimensions
         self.lrH = int(self.H * scale_percent / 100)
         self.lrW = int(self.W * scale_percent / 100)
+        self.M = self.lrH*self.lrW
+
+        self._generate_bop()
         
         # Blur the image with blurring kernel
         blurred = self.fft_blur(self.X, self.B)
-
-        # Create bilinear interpolation operator using Pylops
-        if scale_percent == 100:
-            self.Bop = pylops.Identity(self.lrH*self.lrW)
-        else: 
-            # Create grid to instantiate downsized image
-            ptsH = np.linspace(eps, self.H - (1 + eps), self.lrH)    
-            ptsW = np.linspace(eps, self.W - (1 + eps), self.lrW)   
-            meshH, meshZ = np.meshgrid(ptsH, ptsW)
-
-            iava = np.vstack([meshH.flatten(), meshZ.flatten()])
-
-            # create downsizing linear operator 
-            self.Bop = pylops.signalprocessing.Bilinear(iava, (self.H, self.W))
 
         # create downsized, blurred image, as a vector
         y0 = self.Bop * blurred
 
         # create noise
-        noises = np.random.normal(0, sigma, y0.shape)
+        noises = np.random.normal(0, self.sigma, y0.shape)
 
         # add noise
         self.Y = y0 + noises
@@ -69,8 +59,6 @@ class Deblur(Problem):
         # Store initialization (as a vector)
         self.Xinit = self.fft_deblur(xhat, self.B)
 
-        self.M = self.lrH*self.lrW  
-
     def _load_kernel(self):
         # Load the blurring kernel
         if self.kernel_path is not None:
@@ -82,6 +70,20 @@ class Deblur(Problem):
             self.B = self.kernel
         else:
             raise Exception('Need to pass in blur kernel path or kernel')
+
+    def _generate_bop(self):
+        # Create bilinear interpolation operator using Pylops
+        if self.scale_percent == 100:
+            self.Bop = pylops.Identity(self.lrH*self.lrW)
+        else: 
+            # Create grid to instantiate downsized image
+            ptsH = np.linspace(eps, self.H - (1 + eps), self.lrH)    
+            ptsW = np.linspace(eps, self.W - (1 + eps), self.lrW)   
+            meshH, meshZ = np.meshgrid(ptsH, ptsW)
+
+            # create downsizing linear operator 
+            iava = np.vstack([meshH.flatten(), meshZ.flatten()])
+            self.Bop = pylops.signalprocessing.Bilinear(iava, (self.H, self.W))
 
     def forward_model(self, w):
         # Y = S B {x} (+ noise)
@@ -111,10 +113,15 @@ class Deblur(Problem):
     def grad_stoch(self, z, mb):
         w = z.flatten()
         mb = mb.flatten()
+
+        # Get nonzero indices of the mini-batch
+        index = np.nonzero(mb)
+        res = np.zeros(self.M)
+
         W_blurred = self.fft_blur(w, self.B)
         W_down = self.Bop * W_blurred
-        res = W_down - self.Y
-        res = np.multiply(res, mb)
+        res[index] = W_down[index] - self.Y[index]
+
         res_up = self.Bop.H * res
         return self.fft_blur(res_up, np.roll(np.flip(self.B),1)) * 2 / self.H / self.W
     
