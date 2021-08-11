@@ -25,7 +25,7 @@ class Problem():
     def get_item(self, key):
         return self.__dict__[key]
 
-    def select_mb_indices(self, size):
+    def select_mb(self, size):
         # Draw measurements uniformly at random for mini-batch stochastic gradient
         # Get batch indices in terms of (row, col)
         batch = np.zeros((1, self.H*self.W))
@@ -90,8 +90,6 @@ class Problem():
 
 # use this for debugging
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-
     height = 64
     width = 64
     noise_level = 0.01

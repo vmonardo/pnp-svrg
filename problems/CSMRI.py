@@ -44,7 +44,8 @@ class CSMRI(Problem):
         # Forward Model: Y = M o (F{X} + noise)
         # return as a vector
         tmp = w.reshape(self.H, self.W)
-        ftmp = np.fft.fft2(tmp)      
+        # ftmp = np.fft.fft2(tmp)
+        ftmp = self.F @ tmp @ self.F.T      
         return np.multiply(self.mask, ftmp).reshape(self.N)
 
     def f(self, w):
@@ -62,22 +63,30 @@ class CSMRI(Problem):
         res = (self.forward_model(w).reshape(self.H,self.W) - y)
 
         # return inverse 2D Fourier Transform of residual
-        tmp = np.real(np.fft.ifft2(res))
+        # tmp = np.real(np.fft.ifft2(res))
+        tmp = np.real(np.conj(self.F) @ res @ np.conj(self.F.T)) / self.H / self.W
         return tmp.reshape(self.N) * 2 
 
     def grad_stoch(self, z, mb):
         # Get objects as images
         y = self.Y.reshape(self.H, self.W)
         w = z.reshape(self.H, self.W)
+        mb = np.multiply(mb, self.mask)
 
-        # index = np.nonzero(mb)
-        # initialize space for residual and compute it
-        res = np.zeros((self.H, self.W), dtype=complex)
-        res = np.multiply((self.forward_model(w).reshape(self.H,self.W) - y), mb)
-        
+        # Get nonzero indices of the mini-batch
+        index = np.nonzero(mb)
+
+        # Get relevant rows of DFT matrix
+        F_i = self.F[index[0],:]
+        F_j = self.F[index[1],:]
+
+        # compute residual
+        res = ((F_i @ w * F_j).sum(-1) - y[index])  # get residual in as a column vector
+        tmp = np.einsum('ij,i->ij',np.conj(F_i),res)
+
         # return inverse 2D Fourier Transform of residual
-        tmp = np.real(np.fft.ifft2(res))
-        return tmp.reshape(self.N) * 2 
+        op = np.real(np.einsum('ij,ik->jk',tmp,np.conj(F_j)))
+        return op.reshape(self.N) * 2 / self.H / self.W
 
 # use this for debugging
 if __name__ == '__main__':
@@ -88,3 +97,7 @@ if __name__ == '__main__':
     p = CSMRI(img_path='./data/Set12/01.png', H=height, W=width, sample_prob=0.5, sigma=noise_level)
     p.grad_full_check()
     p.grad_stoch_check()
+
+    x = np.random.uniform(0.0, 1.0, p.N)
+    minib = p.select_mb(10)
+    p.grad_stoch(x, minib)
