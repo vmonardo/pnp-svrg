@@ -1,72 +1,90 @@
-from problems.problem import Problem
+#!/usr/bin/env python
+# coding=utf-8
+
+from problem import Problem
 import numpy as np
 import math
 
 class CSMRI(Problem):
-    def __init__(self, img_path=None, img=None, H=256, W=256, 
-                       sample_prob=0.5, sigma=1.0,
-                       lr_decay=0.999):
-        super().__init__(img_path, img, H, W, lr_decay)
+    def __init__(self, img_path=None, H=256, W=256, 
+                       sample_prob=0.5, sigma=1.0):
+        super().__init__(img_path, H, W)
 
+        # User specified parameters
         self.sample_prob = sample_prob
         self.sigma = sigma
 
-        # problem setup
-        mask = np.random.choice([0, 1], size=(H, W), p=[1-sample_prob, sample_prob])
+        self._generate_problem()
 
-        forig = np.fft.fft2(self.original)
-#         np.random.seed(0)
-        noises = np.random.normal(0, sigma, (H, W))
+    def _generate_problem(self):
+        # Problem Setup
+        self._generate_mask()
+        self._generate_F()
 
-        y0 = forig + noises
-        y = np.multiply(mask, y0)
+        y0 = self.forward_model(self.X)
+        noises = np.random.normal(0, self.sigma, (self.H, self.W))
+        y = y0.reshape(self.H, self.W) + np.multiply(self.mask, noises)
         x_init = np.absolute(np.fft.ifft2(y))
 
-        i, j = np.meshgrid(np.arange(H), np.arange(W))
-        omega = np.exp(-2*math.pi*1J/H)
-        F = np.power(omega, i*j)
+        # Save essential variables
+        self.Xinit = x_init.reshape(self.N)
+        self.Y = y.flatten()
 
-        self.noisy = x_init
-        self.mask = mask
-        self.y = y
-        self.F = F
+    def _generate_mask(self):
+        # Generate random binary mask to determine sampled Fourier coefficients
+        self.mask = np.random.choice([0, 1], size=(self.H, self.W), p=[1-self.sample_prob, self.sample_prob])
 
-    def batch(self, mini_batch_size):
-        # Get batch indices in terms of (row, col)
+    def _generate_F(self):
+        # Get 2D Fourier Transform Matrix
+        i, j = np.meshgrid(np.arange(self.H), np.arange(self.W))
+        omega = np.exp(-2*math.pi*1J/self.H)
+        self.F = np.power(omega, i*j)
 
-        H, W = self.mask.shape[:2]
-        batch = np.zeros((1, H*W))
-        tmp = np.linspace(0, H*W - 1, H*W)
-        one_locs = tmp[np.matrix.flatten(self.mask) == 1].astype(int)
-        batch_locs = np.random.choice(one_locs, mini_batch_size, replace=False)
-        batch[0, batch_locs] = 1
+    def forward_model(self, w):
+        # Forward Model: Y = M o (F{X} + noise)
+        # return as a vector
+        tmp = w.reshape(self.H, self.W)
+        ftmp = np.fft.fft2(tmp)      
+        return np.multiply(self.mask, ftmp).reshape(self.N)
 
-        return batch.reshape(H, W).astype(int)
+    def f(self, w):
+        # f(W) = 1 / 2*M || Y - M o F{W} ||_F^2
+        # Compute data fidelity function value at a given point
+        return np.linalg.norm(self.Y - self.forward_model(w)) ** 2 / 2 / self.H / self.W
 
-    def full_grad(self, z):
-        N = self.H
+    def grad_full(self, z):
+        # Get objects as images
+        y = self.Y.reshape(self.H, self.W)
+        w = z.reshape(self.H, self.W)
 
-        index = np.nonzero(self.mask)
+        # initialize space for residual and compute it
+        res = np.zeros((self.H, self.W), dtype=complex)
+        res = (self.forward_model(w).reshape(self.H,self.W) - y)
 
-        res = np.zeros((N, N), dtype=complex)
+        # return inverse 2D Fourier Transform of residual
+        tmp = np.real(np.fft.ifft2(res))
+        return tmp.reshape(self.N) * 2 
+
+    def grad_stoch(self, z, mb):
+        # Get objects as images
+        y = self.Y.reshape(self.H, self.W)
+        w = z.reshape(self.H, self.W)
+
+        # index = np.nonzero(mb)
+        # initialize space for residual and compute it
+        res = np.zeros((self.H, self.W), dtype=complex)
+        res = np.multiply((self.forward_model(w).reshape(self.H,self.W) - y), mb)
         
-        F_i = self.F[index[0],:]
-        F_j = self.F[index[1],:]
-        
-        res[index] = ((F_i @ z * F_j).sum(-1) - self.y[index])
-        
-        return (np.real(np.conj(self.F) @ res @ np.conj(self.F.T))/N**2)/len(index[0])
+        # return inverse 2D Fourier Transform of residual
+        tmp = np.real(np.fft.ifft2(res))
+        return tmp.reshape(self.N) * 2 
 
-    def stoch_grad(self, z, mini_batch_size):
-        N = self.H
+# use this for debugging
+if __name__ == '__main__':
+    height = 64
+    width = 64
+    noise_level = 0.01
 
-        index = np.nonzero(self.batch(mini_batch_size))
-        
-        res = np.zeros((N, N), dtype=complex)
-        
-        F_i = self.F[index[0],:]
-        F_j = self.F[index[1],:]
-        
-        res[index] = ((F_i @ z * F_j).sum(-1) - self.y[index])
-        
-        return (np.real(np.conj(self.F) @ res @ np.conj(self.F.T))/N**2)/len(index[0])
+    p = CSMRI(img_path='./data/Set12/01.png', H=height, W=width, sample_prob=0.5, sigma=noise_level)
+    p.grad_full_check()
+    p.grad_stoch_check()
