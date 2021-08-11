@@ -50,7 +50,7 @@ class Problem():
         w = np.random.uniform(0.0, 1.0, self.N)
         delta = np.zeros(self.N)
         grad = np.zeros(self.N)
-        eps = 1e-4
+        eps = 1e-6
 
         for i in range(self.N):
             delta[i] = eps
@@ -58,8 +58,9 @@ class Problem():
             delta[i] = 0
 
         grad_comp = self.grad_full(w)
-        if np.linalg.norm(grad - grad_comp) > 1e-3:
+        if np.linalg.norm(grad - grad_comp) > 1e-2:
             print('Full Grad check failed!')
+            print('norm: ', np.linalg.norm(grad - grad_comp))
             print('grad diff: ', grad)
             print('grad compute: ', grad_comp)
             return False
@@ -73,10 +74,10 @@ class Problem():
         full_grad = self.grad_full(w)
         grad_comp = np.zeros(self.N)
 
-        for i in range(self.N):
-            mb = np.zeros(self.N)
+        for i in range(self.M):
+            mb = np.zeros(self.M, dtype=int)
             mb[i] = 1
-            mb = mb.reshape(self.H, self.W)
+            mb = mb.reshape(self.lrH, self.lrW)
             grad_comp += self.grad_stoch(w, mb).flatten()
 
         if np.linalg.norm(full_grad - grad_comp) > 1e-6:

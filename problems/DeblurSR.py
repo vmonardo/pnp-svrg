@@ -1,112 +1,126 @@
-from problems.problem import Problem
+#!/usr/bin/env python
+# coding=utf-8
+from problem import Problem
 import numpy as np
-from utils import fft_blur
 import pylops
 from PIL import Image
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 
+eps = 1e-10
 class Deblur(Problem):
-    def __init__(self, img_path=None, img=None, H=64, W=64, 
-                       kernel_path=None, kernel=None, sigma=0.0, scale_percent=50, 
-                       lr_decay=0.999):
-        super().__init__(img_path, img, H, W, lr_decay)
+    def __init__(self, img_path=None, H=64, W=64, 
+                       kernel_path=None, kernel=None, sigma=0.0, scale_percent=50):
+        super().__init__(img_path, H, W)
 
-        # problem setup
-        if kernel_path is not None:
-            blur = np.array(Image.open(kernel_path).resize((H, W)))
-        elif kernel == "Identity":
-            blur = np.zeros(H*W)
-            blur[0] = 1
-        elif kernel is not None:
-            blur = kernel
-        else:
-            raise Exception('Need to pass in blur kernel path or kernel')
-        
+        # User specified parameters
         self.sigma = sigma
-        self.blur = blur
-        img = self.original
-        nz, nx = img.shape
-        self.dim_old = (nz, nx)
+
+        # Identify kernel type
+        if kernel_path is not None:
+            self.kernel_path = kernel_path
+        if kernel is not None:
+            self.kernel = kernel
+        if kernel_path is None and kernel is None:
+            raise Exception('Need to pass in kernel path or kernel as image')
+
+        self._load_kernel()
+
+        # Calculate low-res image dimensions
+        self.lrH = int(self.H * scale_percent / 100)
+        self.lrW = int(self.W * scale_percent / 100)
         
         # Blur the image with blurring kernel
-        blurred = fft_blur(img, blur)
+        blurred = self.fft_blur(self.X.flatten(), self.B.flatten())
         self.blurred = blurred
 
         if scale_percent == 100:
-            width, height = nz, nx
-            self.dim_new = self.dim_old
-            Bop = pylops.Identity(width*height)
+            self.Bop = pylops.Identity(self.H0*self.W0)
         else: 
-            width = int(img.shape[1] * scale_percent / 100)
-            height = int(img.shape[0] * scale_percent / 100)
-            self.dim_new = (width, height)
-
             # Create grid to instantiate downsized image
-            zz = np.linspace(0.00001,nz - 1.00001,width)    
-            xx = np.linspace(0.00001,nx - 1.00001,height)   
-            X, Z = np.meshgrid(zz, xx)
+            ptsH = np.linspace(eps, self.H - (1 + eps), self.lrH)    
+            ptsW = np.linspace(eps, self.W - (1 + eps), self.lrW)   
+            meshH, meshZ = np.meshgrid(ptsH, ptsW)
 
-            iava = np.vstack([Z.ravel(), X.ravel()])
+            iava = np.vstack([meshH.flatten(), meshZ.flatten()])
 
             # create downsizing linear operator 
-            Bop = pylops.signalprocessing.Bilinear(iava, (nz, nx))
-            
-        self.Bop = Bop
+            self.Bop = pylops.signalprocessing.Bilinear(iava, (self.H, self.W))
+
         # create downsized, blurred image
-        y0 = Bop * blurred.ravel()
+        y0 = self.Bop * blurred.flatten()
 
         # create noise
         noises = np.random.normal(0, sigma, y0.shape)
 
         # add noise
         y = y0 + noises
-        
-        # Initialize using adjoint of downsizing operator the deblur
-        # blur_hat= Bop * blur.ravel()
-        # deblurred_hat = np.real(np.fft.ifft( np.fft.fft(y.flatten())/np.fft.fft(blur_hat.flatten()) )).reshape(self.dim_new) * self.dim_new[0] * self.dim_new[1]
-        # xinit = Bop.H * deblurred_hat.ravel()
 
-        D2op = pylops.Laplacian((nz, nx), weights=(1, 1), dtype='float64')
+        D2op = pylops.Laplacian((self.H, self.W), weights=(1, 1), dtype='float64')
 
-        xhat = pylops.optimization.leastsquares.NormalEquationsInversion(Bop, [D2op], y.ravel(),
+        xhat = pylops.optimization.leastsquares.NormalEquationsInversion(self.Bop, [D2op], y.flatten(),
                                                                  epsRs=[np.sqrt(0.01)],
                                                                  returninfo=False,
                                                                  **dict(maxiter=100))
 
-        self.xhat = xhat.reshape(self.dim_old)
-        xinit = np.real(np.fft.ifft( np.fft.fft(xhat)/np.fft.fft(blur.flatten()) )).reshape(self.dim_old) * self.H * self.W
-        # xinit = (xinit - xinit.min()) / (xinit.max() - xinit.min())
-        
-        # xhat = Bop.H * y
-        # xinit = np.real(np.fft.ifft( np.fft.fft(xhat)/np.fft.fft(blur.flatten()) )).reshape(self.dim_old) * self.H * self.W
+        xinit = self.fft_deblur(xhat, self.B)
 
-        self.num_meas = y.size
-        self.noisy = xinit.reshape(nz, nx)
-        self.y = y.reshape(self.dim_new) 
-        
-    def batch(self, mini_batch_size):
-        N = self.num_meas
-        tmp = np.random.permutation(N)
-        k = tmp[0:mini_batch_size]
-        return k
+        self.M = self.lrH*self.lrW
+        self.Xinit = xinit.reshape(self.H, self.W)
+        self.Y = y.flatten()
+
+    def _load_kernel(self):
+        if self.kernel_path is not None:
+            self.B = np.array(Image.open(self.kernel_path).resize((self.H, self.W)))
+        elif self.kernel == "Identity":
+            self.B = np.zeros(self.H*self.W)
+            self.B[0] = 1
+        elif self.kernel is not None:
+            self.B = self.kernel
+        else:
+            raise Exception('Need to pass in blur kernel path or kernel')
+
+    def forward_model(self, w):
+        return self.Bop*self.fft_blur(w.flatten(), self.B.flatten()).flatten()
+
+    def f(self, w):
+        # f(W) = 1 / 2*M || Y - M o F{W} ||_F^2
+        # Compute data fidelity function value at a given point
+        return np.linalg.norm(self.Y - self.forward_model(w)) ** 2 / 2 / self.H / self.W
+
+    def fft_blur(self, M1, M2):
+        return np.real(np.fft.ifft( np.fft.fft(M1.flatten())*np.fft.fft(M2.flatten()) )).reshape(self.H,self.W) 
+
+    def fft_deblur(self, M1, M2):
+        return np.real(np.fft.ifft( np.fft.fft(M1.flatten())/np.fft.fft(M2.flatten()) )).reshape(self.H,self.W) 
 
     ## nab l(x) = B^T S^T (S B Z - y) / m
-    def full_grad(self, z):
-        Z_blurred = fft_blur(z, self.blur)
-        Z_down = (self.Bop * Z_blurred.flatten()).reshape(self.dim_new) 
-        res = Z_down - self.y
-        res_up = (self.Bop.H * res.flatten()).reshape(self.dim_old)
-        return fft_blur(res_up, np.roll(np.flip(self.blur),1)) 
+    def grad_full(self, z):
+        w = z.flatten()
+        W_blurred = self.fft_blur(w, self.B.flatten())
+        W_down = (self.Bop * W_blurred.flatten()).reshape(self.lrH, self.lrW) 
+        res = W_down - self.Y.reshape(self.lrH, self.lrW)
+        res_up = (self.Bop.H * res.flatten()).reshape(self.H, self.W)
+        return self.fft_blur(res_up, np.roll(np.flip(self.B.flatten()),1)).flatten() * 2 / self.H / self.W
 
     ## nab l(x) = B^T S^T (S B Z - y) / m
-    def stoch_grad(self, z, mini_batch_size):
-        index = self.batch(mini_batch_size)
-        res = np.zeros(self.y.shape)
-        Z_blurred = fft_blur(z, self.blur)
-        # Z_blurred = cv2.GaussianBlur(z, (self.blur_size_x, self.blur_size_y), 0)
-        Z_down = (self.Bop * Z_blurred.flatten()).reshape(self.dim_new)
-        # Z_down = cv2.resize(Z_blurred, self.dim, interpolation = cv2.INTER_AREA)
-        res.ravel()[index] = Z_down.ravel()[index] - self.y.ravel()[index]
-        res_up = (self.Bop.H * res.flatten()).reshape(self.dim_old)
-        # res_up = cv2.resize(res.reshape(self.dim), (self.H,self.W), interpolation = cv2.INTER_AREA)
-        return fft_blur(res_up, np.roll(np.flip(self.blur),1))
+    def grad_stoch(self, z, mb):
+        w = z.flatten()
+        res = np.zeros((self.lrH, self.lrW))
+        W_blurred = self.fft_blur(w, self.B)
+        W_down = (self.Bop * W_blurred.flatten()).reshape(self.lrH, self.lrW)
+        res = W_down - self.Y.reshape(self.lrH, self.lrW)
+        res = np.multiply(res, mb)
+        res_up = (self.Bop.H * res.flatten()).reshape(self.H, self.W)
+        return self.fft_blur(res_up, np.roll(np.flip(self.B),1)) * 2 / self.H / self.W
     
+# use this for debugging
+if __name__ == '__main__':
+    height = 64
+    width = 64
+    rescale = 50
+    noise_level = 0.01
+
+    p = Deblur(img_path='./data/Set12/01.png', kernel_path='./data/kernel.png', H=height, W=width, sigma=noise_level, scale_percent=rescale)
+    p.grad_full_check()
+    p.grad_stoch_check()

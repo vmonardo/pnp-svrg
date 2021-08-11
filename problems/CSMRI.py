@@ -30,6 +30,10 @@ class CSMRI(Problem):
         self.Xinit = x_init.reshape(self.N)
         self.Y = y.flatten()
 
+        # maintaining consistency for debugging
+        self.lrH, self.lrW = self.H, self.W     
+        self.M = self.N
+
     def _generate_mask(self):
         # Generate random binary mask to determine sampled Fourier coefficients
         self.mask = np.random.choice([0, 1], size=(self.H, self.W), p=[1-self.sample_prob, self.sample_prob])
@@ -97,7 +101,3 @@ if __name__ == '__main__':
     p = CSMRI(img_path='./data/Set12/01.png', H=height, W=width, sample_prob=0.5, sigma=noise_level)
     p.grad_full_check()
     p.grad_stoch_check()
-
-    x = np.random.uniform(0.0, 1.0, p.N)
-    minib = p.select_mb(10)
-    p.grad_stoch(x, minib)
