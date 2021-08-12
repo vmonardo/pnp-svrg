@@ -10,7 +10,7 @@ def pnp_lsvrg(problem, denoiser, eta, tt, mini_batch_size, prob_update=0.1, verb
     psnr_per_iter = []
 
     # Main PnP LSVRG routine
-    z = np.copy(problem.noisy)
+    z = np.copy(problem.Xinit)
     zs = [z]
 
     denoiser.t = 0
