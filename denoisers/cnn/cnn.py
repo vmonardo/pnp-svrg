@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data as td 
 import os
-from spectral import spectral_norm
+from .spectral import spectral_norm
 
 class FlickrSet(td.Dataset):
     def __init__(self, root_dir='flickr30k', image_size=(256, 256), mode='train', sigma=40):
