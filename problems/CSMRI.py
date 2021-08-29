@@ -53,7 +53,7 @@ class CSMRI(Problem):
         return np.multiply(self.mask, ftmp).reshape(self.N)
 
     def f(self, w):
-        # f(W) = 1 / 2*M || Y - M o F{W} ||_F^2
+        # f(W) = || Y - M o F{W} ||_F^2 / 2*M
         # Compute data fidelity function value at a given point
         return np.linalg.norm(self.Y - self.forward_model(w)) ** 2 / 2 / self.M
 
