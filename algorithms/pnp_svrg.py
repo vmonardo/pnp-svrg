@@ -33,7 +33,7 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, conv
         w = np.copy(z) 
 
         time_per_iter.append(time.time() - start_time)
-        psnr_per_iter.append(peak_signal_noise_ratio(problem.original, z))
+        psnr_per_iter.append(peak_signal_noise_ratio(problem.X, z))
 
         # inner loop
         for j in range(T2): 
@@ -41,13 +41,13 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, conv
                 return z, time_per_iter, psnr_per_iter, zs
 
             # start PSNR track
-            start_PSNR = peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z)
+            start_PSNR = peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))
 
             # start gradient timing
             grad_start_time = time.time()
 
             # calculate stochastic variance-reduced gradient (SVRG)
-            mini_batch = problem.batch(mini_batch_size)
+            mini_batch = problem.select_mb(mini_batch_size)
             v = (problem.grad_stoch(z, mini_batch) - problem.grad_stoch(w, mini_batch)) / mini_batch_size + mu
 
             # Gradient update
@@ -58,7 +58,7 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, conv
             gradient_time += grad_end_time
 
             if verbose:
-                print(str(i) + " Before denoising:  " + str(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z)))
+                print(str(i) + " Before denoising:  " + str(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))))
 
             # start denoising timing
             denoise_start_time = time.time()
@@ -76,7 +76,7 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, conv
 
             # Log timing
             time_per_iter.append(grad_end_time + denoise_end_time)
-            psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z))
+            psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W)))
 
             if verbose:
                 print("After denoising update: " + str(i) + " " + str(j) + " " + str(psnr_per_iter[-1]))

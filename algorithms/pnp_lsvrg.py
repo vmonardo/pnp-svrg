@@ -25,7 +25,7 @@ def pnp_lsvrg(problem, denoiser, eta, tt, mini_batch_size, prob_update=0.1, verb
     start_time = time.time()
     mu = problem.full_grad(z)
     time_per_iter.append(time.time() - start_time)
-    psnr_per_iter.append(peak_signal_noise_ratio(problem.original, z))
+    psnr_per_iter.append(peak_signal_noise_ratio(problem.X, z))
 
     while (time.time() - elapsed) < tt:
         # start timing
@@ -52,7 +52,7 @@ def pnp_lsvrg(problem, denoiser, eta, tt, mini_batch_size, prob_update=0.1, verb
         # Log timing
         time_per_iter.append(time.time() - start_time)
 
-        psnr_per_iter.append(peak_signal_noise_ratio(problem.original, z))
+        psnr_per_iter.append(peak_signal_noise_ratio(problem.X, z))
 
         if verbose:
             print(str(i) + " " + str(psnr_per_iter[-1]))

@@ -57,13 +57,13 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, con
                 return z, time_per_iter, psnr_per_iter, zs
             
             # start PSNR track
-            start_PSNR = peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z)
+            start_PSNR = peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))
 
             # start gradient timing
             grad_start_time = time.time()
 
             # calculate recursive stochastic variance-reduced gradient
-            mini_batch = problem.batch(mini_batch_size)
+            mini_batch = problem.select_mb(mini_batch_size)
             v_next = (problem.grad_stoch(w_next, mini_batch) - problem.grad_stoch(w_previous, mini_batch)) / mini_batch_size + v_previous
 
             # Gradient update
@@ -74,7 +74,7 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, con
             gradient_time += grad_end_time
 
             if verbose:
-                print("After gradient update: " + str(i) + " " + str(j) + " " + str(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z)))
+                print("After gradient update: " + str(i) + " " + str(j) + " " + str(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))))
 
             # start denoising timing
             denoise_start_time = time.time()    
@@ -96,7 +96,7 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, con
             
             # stop timing
             time_per_iter.append(grad_end_time + denoise_end_time)
-            psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z))
+            psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W)))
 
             if verbose:
                 print("After denoising update: " + str(i) + " " + str(j) + " " + str(psnr_per_iter[-1]))

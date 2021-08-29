@@ -24,13 +24,13 @@ def pnp_sgd(problem, denoiser, eta, tt, mini_batch_size, verbose=True, converge_
 
     while (time.time() - elapsed) < tt:
         # start PSNR track
-        start_PSNR = peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z)
+        start_PSNR = peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))
 
         # start gradient timing
         grad_start_time = time.time()
 
         # calculate stochastic gradient
-        mini_batch = problem.batch(mini_batch_size)
+        mini_batch = problem.select_mb(mini_batch_size)
         v = problem.grad_stoch(z, mini_batch) / mini_batch_size
 
         # Gradient update
@@ -41,7 +41,7 @@ def pnp_sgd(problem, denoiser, eta, tt, mini_batch_size, verbose=True, converge_
         gradient_time += grad_end_time
 
         if verbose:
-            print(str(i) + " Before denoising:  " + str(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z)))
+            print(str(i) + " Before denoising:  " + str(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))))
 
         # start denoising timing
         denoise_start_time = time.time()
@@ -60,7 +60,7 @@ def pnp_sgd(problem, denoiser, eta, tt, mini_batch_size, verbose=True, converge_
         # Log timing
         time_per_iter.append(grad_end_time + denoise_end_time)
 
-        psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z))
+        psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W)))
         if verbose:
             print(str(i) + " After denoising:  " + str(psnr_per_iter[-1]))
 
