@@ -35,7 +35,7 @@ def pnp_lsvrg(problem, denoiser, eta, tt, mini_batch_size, prob_update=0.1, verb
         v = problem.stoch_grad(z, mini_batch_size) - problem.stoch_grad(w, mini_batch_size) + mu
 
         # Gradient update
-        z -= (eta*problem.lr_decay**denoiser.t)*v
+        z -= (eta*lr_decay**denoiser.t)*v
 
         # Denoise
         z = denoiser.denoise(noisy=z)

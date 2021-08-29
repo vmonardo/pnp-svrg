@@ -5,7 +5,7 @@ import numpy as np
 from skimage.metrics import peak_signal_noise_ratio
 
 tol = 1e-5
-def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, converge_check=True, diverge_check=False):
+def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_decay=1, converge_check=True, diverge_check=False):
     # Initialize logging variables
     time_per_iter = []
     psnr_per_iter = []
@@ -51,7 +51,7 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, conv
             v = (problem.grad_stoch(z, mini_batch) - problem.grad_stoch(w, mini_batch)) / mini_batch_size + mu
 
             # Gradient update
-            z -= (eta*problem.lr_decay**denoiser.t)*v
+            z -= (eta*lr_decay**denoiser.t)*v
 
             # end gradient timing
             grad_end_time = time.time() - grad_start_time
