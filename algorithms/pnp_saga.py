@@ -49,7 +49,7 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
         v = grad_history[rand_ind] - prev_stoch + sum(grad_history)/hist_size
 
         # Gradient update
-        z -= (eta*lr_decay**denoiser.t)*v
+        z -= (eta*lr_decay**denoiser.t)*v.reshape(problem.H,problem.W)
 
         # end gradient timing
         grad_end_time = time.time() - grad_start_time

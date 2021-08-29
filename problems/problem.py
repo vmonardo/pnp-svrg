@@ -50,13 +50,14 @@ class Problem():
     def grad_full_check(self):
         # Check the gradient implementation at a random value
         w = np.random.uniform(0.0, 1.0, self.N)
+        
         delta = np.zeros(self.N)
         grad = np.zeros(self.N)
         eps = 1e-6
 
         for i in range(self.N):
             delta[i] = eps
-            grad[i] = (self.f(w+delta) -  self.f(w - delta)) / eps   
+            grad[i] = (self.f(w+delta) -  self.f(w)) / eps   
             delta[i] = 0
 
         grad_comp = self.grad_full(w).flatten()
@@ -71,17 +72,17 @@ class Problem():
             return True
         
     def grad_stoch_check(self):
-        # check that (grad) f(w) = sum((grad) f_i(w)) at a random value
+        # check that (grad) f(w) = sum((grad) f_i(w)) / m at a random value
         w = np.random.uniform(0.0, 1.0, self.N)
         full_grad = self.grad_full(w)
         grad_comp = np.zeros(self.N)
 
-        for i in range(self.M):
-            mb = np.zeros(self.M, dtype=int)
+        for i in range(self.N):
+            mb = np.zeros(self.N, dtype=int)
             mb[i] = 1
             grad_comp += self.grad_stoch(w, mb).flatten()
 
-        if np.linalg.norm(full_grad.flatten() - grad_comp) > 1e-6:
+        if np.linalg.norm(full_grad.flatten() - grad_comp / self.M) > 1e-6:
             print('Stoch Grad check failed!')
             print('full grad: ', full_grad)
             print('grad comp: ', grad_comp)

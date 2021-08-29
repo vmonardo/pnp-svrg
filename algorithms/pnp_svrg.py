@@ -33,7 +33,7 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
         w = np.copy(z) 
 
         time_per_iter.append(time.time() - start_time)
-        psnr_per_iter.append(peak_signal_noise_ratio(problem.X, z))
+        psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W)))
 
         # inner loop
         for j in range(T2): 
@@ -51,7 +51,8 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
             v = (problem.grad_stoch(z, mini_batch) - problem.grad_stoch(w, mini_batch)) / mini_batch_size + mu
 
             # Gradient update
-            z -= (eta*lr_decay**denoiser.t)*v
+            z = z.reshape(problem.H,problem.W)
+            z -= (eta*lr_decay**denoiser.t)*v.reshape(problem.H,problem.W)
 
             # end gradient timing
             grad_end_time = time.time() - grad_start_time

@@ -32,7 +32,7 @@ class CSMRI(Problem):
 
         # maintaining consistency for debugging
         self.lrH, self.lrW = self.H, self.W     
-        self.M = self.N
+        self.M = np.count_nonzero(self.mask)
 
     def _generate_mask(self):
         # Generate random binary mask to determine sampled Fourier coefficients
@@ -55,7 +55,7 @@ class CSMRI(Problem):
     def f(self, w):
         # f(W) = 1 / 2*M || Y - M o F{W} ||_F^2
         # Compute data fidelity function value at a given point
-        return np.linalg.norm(self.Y - self.forward_model(w)) ** 2 / 2 / self.H / self.W
+        return np.linalg.norm(self.Y - self.forward_model(w)) ** 2 / 2 / self.M
 
     def grad_full(self, z):
         # Get objects as images
@@ -69,7 +69,7 @@ class CSMRI(Problem):
         # return inverse 2D Fourier Transform of residual
         # tmp = np.real(np.fft.ifft2(res))
         tmp = np.real(np.conj(self.F) @ res @ np.conj(self.F.T)) 
-        return tmp * 2 / self.H / self.W
+        return tmp / self.M
 
     def grad_stoch(self, z, mb):
         # Get objects as images
@@ -90,7 +90,7 @@ class CSMRI(Problem):
 
         # return inverse 2D Fourier Transform of residual
         op = np.real(np.einsum('ij,ik->jk',tmp,np.conj(F_j)))
-        return op * 2 / self.H / self.W
+        return op
 
 # use this for debugging
 if __name__ == '__main__':

@@ -67,7 +67,7 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
             v_next = (problem.grad_stoch(w_next, mini_batch) - problem.grad_stoch(w_previous, mini_batch)) / mini_batch_size + v_previous
 
             # Gradient update
-            z -= (eta*lr_decay**denoiser.t)*v_next
+            z -= (eta*lr_decay**denoiser.t)*v_next.reshape(problem.H,problem.W)
 
             # end gradient timing
             grad_end_time = time.time() - grad_start_time
