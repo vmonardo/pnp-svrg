@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.append('./problems/')
 from CSMRI import CSMRI
+
 sys.path.append('./algorithms/')
 from pnp_svrg import tune_pnp_svrg
 from pnp_sgd import tune_pnp_sgd
@@ -29,17 +30,19 @@ height, width = 256, 256
 main_problem = CSMRI('./data/Set12/13.png', H=height, W=width, sample_prob=0.5, sigma=5) # Brain MRI
 
 output_fn = 'hyperparam-tuning' + datetime.now().strftime('-%y-%m-%d-%H-%M') + '.csv'
+
 TIME_PER_TRIAL = 10
 MAX_EVALS = 5
+PROBLEM_NAME = 'CSMRI'
 
 with open(output_fn, 'w') as csvfile:
     writer = csv.writer(csvfile, delimiter=',')
-    
+
     ##########################
     # PNP SVRG TUNING
     ##########################
 
-    writer.writerow(['CSMRI', 'PNPSVRG'])
+    writer.writerow([PROBLEM_NAME, 'PNPSVRG'])
 
     # create proxy function for hyperopt tuning
     svrg_proxy = partial(tune_pnp_svrg, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
@@ -66,7 +69,7 @@ with open(output_fn, 'w') as csvfile:
 
     writer.writerow(['eta', 'mini_batch_size', 'T2'])
     writer.writerow([results['eta'], results['mini_batch_size'], results['T2']])
-    writer.writerow(['loss', 'z'])
+    writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
     writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
 
     print(results['eta'], results['mini_batch_size'], results['T2'], out['loss'], out['psnr_per_iter'][-1])
@@ -75,7 +78,7 @@ with open(output_fn, 'w') as csvfile:
     # PNP SGD TUNING
     ##########################
 
-    writer.writerow(['CSMRI', 'PNPSGD'])
+    writer.writerow([PROBLEM_NAME, 'PNPSGD'])
 
     # create proxy function for hyperopt tuning
     sgd_proxy = partial(tune_pnp_sgd, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
@@ -101,7 +104,7 @@ with open(output_fn, 'w') as csvfile:
 
     writer.writerow(['eta', 'mini_batch_size'])
     writer.writerow([results['eta'], results['mini_batch_size']])
-    writer.writerow(['loss', 'z'])
+    writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
     writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
 
     print(results['eta'], results['mini_batch_size'], out['loss'], out['psnr_per_iter'][-1])
@@ -110,7 +113,7 @@ with open(output_fn, 'w') as csvfile:
     # PNP GD TUNING
     ##########################
 
-    writer.writerow(['CSMRI', 'PNPGD'])
+    writer.writerow([PROBLEM_NAME, 'PNPGD'])
 
     # create proxy function for hyperopt tuning
     gd_proxy = partial(tune_pnp_gd, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
@@ -135,7 +138,7 @@ with open(output_fn, 'w') as csvfile:
 
     writer.writerow(['eta'])
     writer.writerow([results['eta']])
-    writer.writerow(['loss', 'z'])
+    writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
     writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
 
     print(results['eta'], out['loss'], out['psnr_per_iter'][-1])
@@ -144,7 +147,7 @@ with open(output_fn, 'w') as csvfile:
     # PNP SAGA TUNING
     ##########################
 
-    writer.writerow(['CSMRI', 'PNPSAGA'])
+    writer.writerow([PROBLEM_NAME, 'PNPSAGA'])
 
     # create proxy function for hyperopt tuning
     saga_proxy = partial(tune_pnp_saga, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
@@ -158,7 +161,7 @@ with open(output_fn, 'w') as csvfile:
     pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSAGA")
     trials = Trials()
     results = fmin(
-        sgd_proxy,
+        saga_proxy,
         space=pspace,
         algo=tpe.suggest,
         trials=trials,
@@ -170,7 +173,7 @@ with open(output_fn, 'w') as csvfile:
 
     writer.writerow(['eta', 'mini_batch_size'])
     writer.writerow([results['eta'], results['mini_batch_size']])
-    writer.writerow(['loss', 'z'])
+    writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
     writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
 
     print(results['eta'], results['mini_batch_size'], out['loss'], out['psnr_per_iter'][-1])
@@ -179,7 +182,7 @@ with open(output_fn, 'w') as csvfile:
     # PNPSARAH TUNING
     ##########################
 
-    writer.writerow(['CSMRI', 'PNPSARAH'])
+    writer.writerow([PROBLEM_NAME, 'PNPSARAH'])
 
     # create proxy function for hyperopt tuning
     sarah_proxy = partial(tune_pnp_sarah, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
@@ -206,7 +209,7 @@ with open(output_fn, 'w') as csvfile:
 
     writer.writerow(['eta', 'mini_batch_size', 'T2'])
     writer.writerow([results['eta'], results['mini_batch_size'], results['T2']])
-    writer.writerow(['loss', 'z'])
+    writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
     writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
 
     print(results['eta'], results['mini_batch_size'], results['T2'], out['loss'], out['psnr_per_iter'][-1])

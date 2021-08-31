@@ -38,7 +38,6 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
         v_previous = problem.grad_full(z)
         
         # General ``step 1'' point
-        w_next = w_next.reshape(problem.H,problem.W)
         w_next = w_previous.reshape(problem.H,problem.W) - eta*v_previous.reshape(problem.H,problem.W)
 
         # end gradient timing
@@ -167,7 +166,6 @@ def tune_pnp_sarah(args, problem, denoiser, tt, verbose=True, lr_decay=1, conver
         v_previous = problem.grad_full(z)
         
         # General ``step 1'' point
-        w_next = w_next.reshape(problem.H,problem.W)
         w_next = w_previous.reshape(problem.H,problem.W) - eta*v_previous.reshape(problem.H,problem.W)
 
         # end gradient timing

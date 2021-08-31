@@ -29,7 +29,9 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
     # calculate stoch_grad
     start_time = time.time()
     
-    stoch_init = problem.grad_stoch(z, mini_batch_size)
+    mini_batch = problem.select_mb(mini_batch_size)
+    stoch_init = problem.grad_stoch(z, mini_batch)
+    
     grad_history = [stoch_init,]*hist_size
     prev_stoch = stoch_init
     
@@ -136,7 +138,8 @@ def tune_pnp_saga(args, problem, denoiser, tt, hist_size=50, verbose=True, lr_de
     # calculate stoch_grad
     start_time = time.time()
     
-    stoch_init = problem.grad_stoch(z, mini_batch_size)
+    mini_batch = problem.select_mb(mini_batch_size)
+    stoch_init = problem.grad_stoch(z, mini_batch)
     grad_history = [stoch_init,]*hist_size
     prev_stoch = stoch_init
     
