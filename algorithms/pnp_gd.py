@@ -166,7 +166,7 @@ def tune_pnp_gd(args, problem, denoiser, tt, verbose=True, lr_decay=1, converge_
 
     # output denoised image, time stats, psnr stats
     return {
-        'loss': -peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W)),
+        'loss': -(psnr_per_iter[-1] - psnr_per_iter[0]),    # Look for hyperparameters that increase the positive change in PSNR
         'status': STATUS_OK,
         'z': z,
         'time_per_iter': time_per_iter,

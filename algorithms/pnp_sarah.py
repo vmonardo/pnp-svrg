@@ -25,7 +25,10 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
     elapsed = time.time()
 
     # outer loop
+    break_out_flag = False
     while (time.time() - elapsed) < tt:
+        if break_out_flag:
+            break
         # Initialize ``step 0'' points
         w_previous = np.copy(z) 
 
@@ -111,10 +114,12 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
 
             # Check convergence in terms of PSNR
             if converge_check is True and np.abs(start_PSNR - psnr_per_iter[-1]) < tol:
+                break_out_flag = True
                 break
 
             # Check divergence of PSNR
             if diverge_check is True and psnr_per_iter[-1] < 0:
+                break_out_flag = True
                 break
         
         i += 1
@@ -149,7 +154,10 @@ def tune_pnp_sarah(args, problem, denoiser, tt, verbose=True, lr_decay=1, conver
     elapsed = time.time()
 
     # outer loop
+    break_out_flag = False
     while (time.time() - elapsed) < tt:
+        if break_out_flag:
+            break
         # Initialize ``step 0'' points
         w_previous = np.copy(z) 
 
@@ -235,16 +243,20 @@ def tune_pnp_sarah(args, problem, denoiser, tt, verbose=True, lr_decay=1, conver
 
             # Check convergence in terms of PSNR
             if converge_check is True and np.abs(start_PSNR - psnr_per_iter[-1]) < tol:
+                break_out_flag = True
                 break
 
             # Check divergence of PSNR
             if diverge_check is True and psnr_per_iter[-1] < 0:
+                break_out_flag = True
                 break
         
         i += 1
 
     # output denoised image, time stats, psnr stats
     return {
+        'loss': -(psnr_per_iter[-1] - psnr_per_iter[0]),    # Look for hyperparameters that increase the positive change in PSNR
+        'status': STATUS_OK,
         'z': z,
         'time_per_iter': time_per_iter,
         'psnr_per_iter': psnr_per_iter,

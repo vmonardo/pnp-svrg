@@ -29,7 +29,7 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
     # calculate stoch_grad
     start_time = time.time()
     
-    stoch_init = problem.stoch_grad(z, mini_batch_size)
+    stoch_init = problem.grad_stoch(z, mini_batch_size)
     grad_history = [stoch_init,]*hist_size
     prev_stoch = stoch_init
     
@@ -45,8 +45,9 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
         grad_start_time = time.time()
 
         # calculate stochastic gradient
+        mini_batch = problem.select_mb(mini_batch_size)
         rand_ind = np.random.choice(hist_size, 1).item()
-        grad_history[rand_ind] = problem.stoch_grad(z, mini_batch_size)
+        grad_history[rand_ind] = problem.grad_stoch(z, mini_batch) / mini_batch_size
         
         v = grad_history[rand_ind] - prev_stoch + sum(grad_history)/hist_size
 
@@ -135,7 +136,7 @@ def tune_pnp_saga(args, problem, denoiser, tt, hist_size=50, verbose=True, lr_de
     # calculate stoch_grad
     start_time = time.time()
     
-    stoch_init = problem.stoch_grad(z, mini_batch_size)
+    stoch_init = problem.grad_stoch(z, mini_batch_size)
     grad_history = [stoch_init,]*hist_size
     prev_stoch = stoch_init
     
@@ -151,8 +152,9 @@ def tune_pnp_saga(args, problem, denoiser, tt, hist_size=50, verbose=True, lr_de
         grad_start_time = time.time()
 
         # calculate stochastic gradient
+        mini_batch = problem.select_mb(mini_batch_size)
         rand_ind = np.random.choice(hist_size, 1).item()
-        grad_history[rand_ind] = problem.stoch_grad(z, mini_batch_size)
+        grad_history[rand_ind] = problem.grad_stoch(z, mini_batch) / mini_batch_size
         
         v = grad_history[rand_ind] - prev_stoch + sum(grad_history)/hist_size
 
@@ -207,7 +209,7 @@ def tune_pnp_saga(args, problem, denoiser, tt, hist_size=50, verbose=True, lr_de
 
     # output denoised image, time stats, psnr stats
     return {
-        'loss': -peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W)),
+        'loss': -(psnr_per_iter[-1] - psnr_per_iter[0]),    # Look for hyperparameters that increase the positive change in PSNR
         'status': STATUS_OK,
         'z': z,
         'time_per_iter': time_per_iter,

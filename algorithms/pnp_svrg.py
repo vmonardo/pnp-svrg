@@ -26,7 +26,10 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
     elapsed = time.time()
 
     # outer loop
+    break_out_flag = False
     while (time.time() - elapsed) < tt:
+        if break_out_flag:
+            break
         start_time = time.time()
 
         # Full gradient at reference point
@@ -90,9 +93,11 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
 
             # Check convergence in terms of PSNR
             if converge_check is True and np.abs(start_PSNR - psnr_per_iter[-1]) < tol:
+                break_out_flag = True
                 break
             # Check divergence of PSNR
             if diverge_check is True and psnr_per_iter[-1] < 0:
+                break_out_flag = True
                 break
         i += 1
 
@@ -194,12 +199,12 @@ def tune_pnp_svrg(args, problem, denoiser, tt, verbose=True, lr_decay=1, converg
             # Check convergence in terms of PSNR
             if converge_check is True and np.abs(start_PSNR - psnr_per_iter[-1]) < tol:
                 break_out_flag = True
-                print('Problem Converged')
+                # print('Problem Converged')
                 break
             # Check divergence of PSNR
             if diverge_check is True and psnr_per_iter[-1] < 0:
                 break_out_flag = True
-                print('Problem Diverged')
+                # print('Problem Diverged')
                 break
         i += 1
 
