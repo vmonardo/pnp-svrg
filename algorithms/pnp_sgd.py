@@ -36,6 +36,7 @@ def pnp_sgd(problem, denoiser, eta, tt, mini_batch_size, verbose=True, lr_decay=
         v = problem.grad_stoch(z, mini_batch) / mini_batch_size
 
         # Gradient update
+        z = z.reshape(problem.H,problem.W)
         z -= (eta*lr_decay**denoiser.t)*v.reshape(problem.H,problem.W)
 
         # end gradient timing
@@ -122,6 +123,7 @@ def tune_pnp_sgd(args, problem, denoiser, tt, verbose=True, lr_decay=1, converge
         v = problem.grad_stoch(z, mini_batch) / mini_batch_size
 
         # Gradient update
+        z = z.reshape(problem.H,problem.W)
         z -= (eta*lr_decay**denoiser.t)*v.reshape(problem.H,problem.W)
 
         # end gradient timing

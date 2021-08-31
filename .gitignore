@@ -3,3 +3,4 @@
 .venv/
 venv/
 flickr30k/*
+hyperparam*

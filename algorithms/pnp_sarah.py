@@ -35,7 +35,8 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
         v_previous = problem.grad_full(z)
         
         # General ``step 1'' point
-        w_next = w_previous - eta*v_previous
+        w_next = w_next.reshape(problem.H,problem.W)
+        w_next = w_previous.reshape(problem.H,problem.W) - eta*v_previous.reshape(problem.H,problem.W)
 
         # end gradient timing
         grad_end_time = time.time() - grad_start_time
@@ -69,6 +70,7 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
             v_next = (problem.grad_stoch(w_next, mini_batch) - problem.grad_stoch(w_previous, mini_batch)) / mini_batch_size + v_previous
 
             # Gradient update
+            z = z.reshape(problem.H,problem.W)
             z -= (eta*lr_decay**denoiser.t)*v_next.reshape(problem.H,problem.W)
 
             # end gradient timing
@@ -157,7 +159,8 @@ def tune_pnp_sarah(args, problem, denoiser, tt, verbose=True, lr_decay=1, conver
         v_previous = problem.grad_full(z)
         
         # General ``step 1'' point
-        w_next = w_previous - eta*v_previous
+        w_next = w_next.reshape(problem.H,problem.W)
+        w_next = w_previous.reshape(problem.H,problem.W) - eta*v_previous.reshape(problem.H,problem.W)
 
         # end gradient timing
         grad_end_time = time.time() - grad_start_time
@@ -191,6 +194,7 @@ def tune_pnp_sarah(args, problem, denoiser, tt, verbose=True, lr_decay=1, conver
             v_next = (problem.grad_stoch(w_next, mini_batch) - problem.grad_stoch(w_previous, mini_batch)) / mini_batch_size + v_previous
 
             # Gradient update
+            z = z.reshape(problem.H,problem.W)
             z -= (eta*lr_decay**denoiser.t)*v_next.reshape(problem.H,problem.W)
 
             # end gradient timing

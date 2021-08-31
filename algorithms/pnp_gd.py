@@ -35,6 +35,7 @@ def pnp_gd(problem, denoiser, eta, tt, verbose=True, lr_decay=1, converge_check=
         v = problem.grad_full(z)
 
         # Gradient update
+        z = z.reshape(problem.H,problem.W)
         z -= (eta*lr_decay**denoiser.t)*v.reshape(problem.H,problem.W)
 
         # end gradient timing
@@ -118,6 +119,7 @@ def tune_pnp_gd(args, problem, denoiser, tt, verbose=True, lr_decay=1, converge_
         v = problem.grad_full(z)
 
         # Gradient update
+        z = z.reshape(problem.H,problem.W)
         z -= (eta*lr_decay**denoiser.t)*v.reshape(problem.H,problem.W)
 
         # end gradient timing

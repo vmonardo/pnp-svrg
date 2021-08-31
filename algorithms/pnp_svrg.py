@@ -126,7 +126,11 @@ def tune_pnp_svrg(args, problem, denoiser, tt, verbose=True, lr_decay=1, converg
     elapsed = time.time()
 
     # outer loop
+    break_out_flag = False
     while (time.time() - elapsed) < tt:
+        if break_out_flag:
+            break
+
         start_time = time.time()
 
         # Full gradient at reference point
@@ -189,15 +193,19 @@ def tune_pnp_svrg(args, problem, denoiser, tt, verbose=True, lr_decay=1, converg
 
             # Check convergence in terms of PSNR
             if converge_check is True and np.abs(start_PSNR - psnr_per_iter[-1]) < tol:
+                break_out_flag = True
+                print('Problem Converged')
                 break
             # Check divergence of PSNR
             if diverge_check is True and psnr_per_iter[-1] < 0:
+                break_out_flag = True
+                print('Problem Diverged')
                 break
         i += 1
 
     # output denoised image, time stats, psnr stats
     return {
-        'loss': -peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W)),
+        'loss': -(psnr_per_iter[-1] - psnr_per_iter[0]),    # Look for hyperparameters that increase the positive change in PSNR 
         'status': STATUS_OK,
         'z': z,
         'time_per_iter': time_per_iter,

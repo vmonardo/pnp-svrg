@@ -51,6 +51,7 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
         v = grad_history[rand_ind] - prev_stoch + sum(grad_history)/hist_size
 
         # Gradient update
+        z = z.reshape(problem.H,problem.W)
         z -= (eta*lr_decay**denoiser.t)*v.reshape(problem.H,problem.W)
 
         # end gradient timing
@@ -156,6 +157,7 @@ def tune_pnp_saga(args, problem, denoiser, tt, hist_size=50, verbose=True, lr_de
         v = grad_history[rand_ind] - prev_stoch + sum(grad_history)/hist_size
 
         # Gradient update
+        z = z.reshape(problem.H,problem.W)
         z -= (eta*lr_decay**denoiser.t)*v.reshape(problem.H,problem.W)
 
         # end gradient timing
