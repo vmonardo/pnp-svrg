@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 import sys
 sys.path.append('./problems/')
-from CSMRI import CSMRI
+from DeblurSR import Deblur
 
 sys.path.append('./algorithms/')
 from pnp_svrg import tune_pnp_svrg
@@ -27,15 +27,16 @@ from NLM import NLMDenoiser
 denoiser = NLMDenoiser(filter_size=1, patch_size=4, patch_distance=5)
 
 height, width = 256, 256
-main_problem = CSMRI('./data/Set12/13.png', H=height, W=width, sample_prob=0.5, sigma=5) # Brain MRI
+rescale = 75
+noise_level = 0
 
-PROBLEM_NAME = 'CSMRI'
+
+PROBLEM_NAME = 'Deblur'
 
 output_fn = 'hyperparam-tuning' + PROBLEM_NAME + datetime.now().strftime('-%y-%m-%d-%H-%M') + '.csv'
 
-TIME_PER_TRIAL = 100
-MAX_EVALS = 500
-
+TIME_PER_TRIAL = 20
+MAX_EVALS = 100000
 
 with open(output_fn, 'w') as csvfile:
     writer = csv.writer(csvfile, delimiter=',')
@@ -46,14 +47,17 @@ with open(output_fn, 'w') as csvfile:
 
     writer.writerow([PROBLEM_NAME, 'PNPSVRG'])
 
+    np.random.seed(0)
+    main_problem = Deblur(img_path='./data/Set12/01.png', kernel_path='./data/kernel.png', H=height, W=width, sigma=noise_level, scale_percent=rescale)
+
     # create proxy function for hyperopt tuning
     svrg_proxy = partial(tune_pnp_svrg, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
 
     # create parameter space
     pspace = (
-        hp.uniform('eta', 1e-5, 1),   
-        scope.int(quniform('mini_batch_size', 1, 1000, q=1)),
-        scope.int(quniform('T2', 1, 100, q=1))
+        hp.uniform('eta', 1e-6, 1e6),   
+        scope.int(quniform('mini_batch_size', 1, 10000, q=1)),
+        scope.int(quniform('T2', 1, 1000, q=1))
     )
 
     pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSVRG")
@@ -67,6 +71,8 @@ with open(output_fn, 'w') as csvfile:
     )
     pbar.close()
 
+    print(results)
+
     out = svrg_proxy((results['eta'], int(results['mini_batch_size']), int(results['T2'])))
 
     writer.writerow(['eta', 'mini_batch_size', 'T2'])
@@ -74,7 +80,7 @@ with open(output_fn, 'w') as csvfile:
     writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
     writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
 
-    print(results['eta'], results['mini_batch_size'], results['T2'], out['loss'], out['psnr_per_iter'][-1])
+    print(results['eta'], results['mini_batch_size'], results['T2'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
 
     ##########################
     # PNP SGD TUNING
@@ -82,12 +88,15 @@ with open(output_fn, 'w') as csvfile:
 
     writer.writerow([PROBLEM_NAME, 'PNPSGD'])
 
+    np.random.seed(0)
+    main_problem = Deblur(img_path='./data/Set12/01.png', kernel_path='./data/kernel.png', H=height, W=width, sigma=noise_level, scale_percent=rescale)
+
     # create proxy function for hyperopt tuning
     sgd_proxy = partial(tune_pnp_sgd, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
 
     # create parameter space
     pspace = (
-        hp.uniform('eta', 1e-5, 1),
+        hp.uniform('eta', 1e-7, 1e-5),
         scope.int(quniform('mini_batch_size', 1, 1000, q=1))
     )
 
@@ -109,7 +118,7 @@ with open(output_fn, 'w') as csvfile:
     writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
     writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
 
-    print(results['eta'], results['mini_batch_size'], out['loss'], out['psnr_per_iter'][-1])
+    print(results['eta'], results['mini_batch_size'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
 
     ##########################
     # PNP GD TUNING
@@ -117,12 +126,15 @@ with open(output_fn, 'w') as csvfile:
 
     writer.writerow([PROBLEM_NAME, 'PNPGD'])
 
+    np.random.seed(0)
+    main_problem = Deblur(img_path='./data/Set12/01.png', kernel_path='./data/kernel.png', H=height, W=width, sigma=noise_level, scale_percent=rescale)
+
     # create proxy function for hyperopt tuning
     gd_proxy = partial(tune_pnp_gd, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
 
     # create parameter space
     pspace = (
-        hp.uniform('eta', 1e-5, 1)
+        hp.uniform('eta', 1e-7, 1e-5)
     )
 
     pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPGD")
@@ -143,7 +155,7 @@ with open(output_fn, 'w') as csvfile:
     writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
     writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
 
-    print(results['eta'], out['loss'], out['psnr_per_iter'][-1])
+    print(results['eta'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
 
     ##########################
     # PNP SAGA TUNING
@@ -151,12 +163,15 @@ with open(output_fn, 'w') as csvfile:
 
     writer.writerow([PROBLEM_NAME, 'PNPSAGA'])
 
+    np.random.seed(0)
+    main_problem = Deblur(img_path='./data/Set12/01.png', kernel_path='./data/kernel.png', H=height, W=width, sigma=noise_level, scale_percent=rescale)
+
     # create proxy function for hyperopt tuning
     saga_proxy = partial(tune_pnp_saga, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
 
     # create parameter space
     pspace = (
-        hp.uniform('eta', 1e-5, 1),
+        hp.uniform('eta', 1e-7, 1e-5),
         scope.int(quniform('mini_batch_size', 1, 1000, q=1))
     )
 
@@ -178,11 +193,14 @@ with open(output_fn, 'w') as csvfile:
     writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
     writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
 
-    print(results['eta'], results['mini_batch_size'], out['loss'], out['psnr_per_iter'][-1])
+    print(results['eta'], results['mini_batch_size'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
 
     ##########################
     # PNPSARAH TUNING
     ##########################
+
+    np.random.seed(0)
+    main_problem = Deblur(img_path='./data/Set12/01.png', kernel_path='./data/kernel.png', H=height, W=width, sigma=noise_level, scale_percent=rescale)
 
     writer.writerow([PROBLEM_NAME, 'PNPSARAH'])
 
@@ -191,7 +209,7 @@ with open(output_fn, 'w') as csvfile:
 
     # create parameter space
     pspace = (
-        hp.uniform('eta', 1e-5, 1),
+        hp.uniform('eta', 1e-7, 1e-5),
         scope.int(quniform('mini_batch_size', 1, 1000, q=1)),
         scope.int(quniform('T2', 1, 1000, q=1))
     )
@@ -214,7 +232,7 @@ with open(output_fn, 'w') as csvfile:
     writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
     writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
 
-    print(results['eta'], results['mini_batch_size'], results['T2'], out['loss'], out['psnr_per_iter'][-1])
+    print(results['eta'], results['mini_batch_size'], results['T2'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
  
 
 

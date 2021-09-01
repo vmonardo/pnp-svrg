@@ -169,7 +169,7 @@ def tune_pnp_sgd(args, problem, denoiser, tt, verbose=True, lr_decay=1, converge
 
     # output denoised image, time stats, psnr stats
     return {
-        'loss': -(psnr_per_iter[-1] - psnr_per_iter[0]),    # Look for hyperparameters that increase the positive change in PSNR
+        'loss': -psnr_per_iter[-1],    # Look for hyperparameters that increase the positive change in PSNR
         'status': STATUS_OK,
         'z': z,
         'time_per_iter': time_per_iter,

@@ -92,7 +92,7 @@ class Deblur(Problem):
     def f(self, w):
         # f(W) = 1 / 2*M || Y - M o F{W} ||_F^2
         # Compute data fidelity function value at a given point
-        return np.linalg.norm(self.Y - self.forward_model(w)) ** 2 / 2 / self.H / self.W
+        return np.linalg.norm(self.Y - self.forward_model(w)) ** 2 / 2 / self.M
 
     def fft_blur(self, M1, M2):
         return np.real(np.fft.ifft( np.fft.fft(M1.flatten())*np.fft.fft(M2.flatten()) )) 
@@ -107,7 +107,7 @@ class Deblur(Problem):
         W_down = self.Bop * W_blurred
         res = W_down - self.Y
         res_up = self.Bop.H * res
-        return self.fft_blur(res_up, np.roll(np.flip(self.B),1)) * 2 / self.H / self.W
+        return self.fft_blur(res_up, np.roll(np.flip(self.B),1)) / self.M
 
     ## nab l(x) = B^T S^T (S B Z - y) / m
     def grad_stoch(self, z, mb):
@@ -123,7 +123,7 @@ class Deblur(Problem):
         res[index] = W_down[index] - self.Y[index]
 
         res_up = self.Bop.H * res
-        return self.fft_blur(res_up, np.roll(np.flip(self.B),1)) * 2 / self.H / self.W
+        return self.fft_blur(res_up, np.roll(np.flip(self.B),1))
     
 # use this for debugging
 if __name__ == '__main__':

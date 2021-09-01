@@ -30,8 +30,8 @@ class Problem():
     def select_mb(self, size):
         # Draw measurements uniformly at random for mini-batch stochastic gradient
         # Get batch indices in terms of (row, col)
-        batch = np.zeros((1, self.N))
-        batch_locs = np.random.choice(self.N, size, replace=False)
+        batch = np.zeros((1, self.M))
+        batch_locs = np.random.choice(self.M, size, replace=False)
         batch[0, batch_locs] = 1
         return batch.astype(int)
 
@@ -77,8 +77,8 @@ class Problem():
         full_grad = self.grad_full(w)
         grad_comp = np.zeros(self.N)
 
-        for i in range(self.N):
-            mb = np.zeros(self.N, dtype=int)
+        for i in range(self.M):
+            mb = np.zeros(self.M, dtype=int)
             mb[i] = 1
             grad_comp += self.grad_stoch(w, mb).flatten()
 

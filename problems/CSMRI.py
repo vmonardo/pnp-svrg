@@ -31,8 +31,9 @@ class CSMRI(Problem):
         self.Y = y.flatten()
 
         # maintaining consistency for debugging
-        self.lrH, self.lrW = self.H, self.W     
-        self.M = np.count_nonzero(self.mask)
+        self.lrH, self.lrW = self.H, self.W   
+        self.M = self.N                         # dimensions of actual output signal  
+        self.M0 = np.count_nonzero(self.mask)   # number of measurements
 
     def _generate_mask(self):
         # Generate random binary mask to determine sampled Fourier coefficients

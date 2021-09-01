@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 import sys
 sys.path.append('./problems/')
-from CSMRI import CSMRI
+from PR import PhaseRetrieval
 
 sys.path.append('./algorithms/')
 from pnp_svrg import tune_pnp_svrg
@@ -26,10 +26,11 @@ sys.path.append('./denoisers/')
 from NLM import NLMDenoiser
 denoiser = NLMDenoiser(filter_size=1, patch_size=4, patch_distance=5)
 
-height, width = 256, 256
-main_problem = CSMRI('./data/Set12/13.png', H=height, W=width, sample_prob=0.5, sigma=5) # Brain MRI
+height, width = 32, 32
+alpha = 10 # meas / dims
+main_problem = PhaseRetrieval('./data/Set12/13.png', H=height, W=width, num_meas=alpha*height*width, sigma=5) # Brain MRI
 
-PROBLEM_NAME = 'CSMRI'
+PROBLEM_NAME = 'PR'
 
 output_fn = 'hyperparam-tuning' + PROBLEM_NAME + datetime.now().strftime('-%y-%m-%d-%H-%M') + '.csv'
 
@@ -74,7 +75,7 @@ with open(output_fn, 'w') as csvfile:
     writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
     writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
 
-    print(results['eta'], results['mini_batch_size'], results['T2'], out['loss'], out['psnr_per_iter'][-1])
+    print(results['eta'], results['mini_batch_size'], results['T2'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
 
     ##########################
     # PNP SGD TUNING
@@ -109,7 +110,7 @@ with open(output_fn, 'w') as csvfile:
     writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
     writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
 
-    print(results['eta'], results['mini_batch_size'], out['loss'], out['psnr_per_iter'][-1])
+    print(results['eta'], results['mini_batch_size'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
 
     ##########################
     # PNP GD TUNING
@@ -143,7 +144,7 @@ with open(output_fn, 'w') as csvfile:
     writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
     writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
 
-    print(results['eta'], out['loss'], out['psnr_per_iter'][-1])
+    print(results['eta'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
 
     ##########################
     # PNP SAGA TUNING
@@ -178,7 +179,7 @@ with open(output_fn, 'w') as csvfile:
     writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
     writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
 
-    print(results['eta'], results['mini_batch_size'], out['loss'], out['psnr_per_iter'][-1])
+    print(results['eta'], results['mini_batch_size'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
 
     ##########################
     # PNPSARAH TUNING
@@ -214,7 +215,7 @@ with open(output_fn, 'w') as csvfile:
     writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
     writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
 
-    print(results['eta'], results['mini_batch_size'], results['T2'], out['loss'], out['psnr_per_iter'][-1])
+    print(results['eta'], results['mini_batch_size'], results['T2'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
  
 
 

@@ -59,14 +59,14 @@ class PhaseRetrieval(Problem):
     def grad_full(self, z):
         tmp = self.A @ z
         Weight = np.divide((np.absolute(tmp)  - self.Y),np.absolute(tmp))
-        return np.real(np.conj(self.A).T @ np.diag(Weight) @ tmp ) / self.M * 2
+        return np.real(np.conj(self.A).T @ np.diag(Weight) @ tmp ) / self.M 
 
     def grad_stoch(self, z, mb):
         index = np.nonzero(mb)
         A_gamma = self.A[index]
         tmp = A_gamma @ z
         Weight = np.divide((np.absolute(tmp)  - self.Y[index]),np.absolute(tmp))
-        return np.real(np.conj(A_gamma).T @ np.diag(Weight) @ tmp) / self.M * 2
+        return np.real(np.conj(A_gamma).T @ np.diag(Weight) @ tmp) 
 
 # use this for debugging
 if __name__ == '__main__':
