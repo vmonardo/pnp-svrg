@@ -106,12 +106,10 @@ class Deblur(Problem):
         return np.linalg.norm(self.Y - self.forward_model(w)) ** 2 / 2 / self.M
 
     def fft_blur(self, M1, M2):
-        tmp = np.real(np.fft.ifft( np.fft.fft(M1.flatten())*np.fft.fft(M2.flatten()) ))
-        return tmp.reshape(self.H, self.W).flatten()
-
+        return np.real(np.fft.ifft( np.fft.fft(M1.flatten())*np.fft.fft(M2.flatten()) ))
+         
     def fft_deblur(self, M1, M2):
-        tmp = np.real(np.fft.ifft( np.fft.fft(M1.flatten())/np.fft.fft(M2.flatten()) )) 
-        return tmp.reshape(self.H, self.W).flatten()
+        return np.real(np.fft.ifft( np.fft.fft(M1.flatten())/np.fft.fft(M2.flatten()) ))  
 
     ## nab l(x) = B^T S^T (S B Z - y) / m
     def grad_full(self, z):

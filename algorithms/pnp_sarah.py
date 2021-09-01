@@ -187,7 +187,7 @@ def tune_pnp_sarah(args, problem, denoiser, tt, verbose=True, lr_decay=1, conver
         # inner loop
         for j in range(T2): 
             if (time.time() - elapsed) >= tt:
-                return z, time_per_iter, psnr_per_iter, zs
+                break
             
             # start PSNR track
             start_PSNR = peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))
@@ -237,7 +237,6 @@ def tune_pnp_sarah(args, problem, denoiser, tt, verbose=True, lr_decay=1, conver
 
             if verbose:
                 print("After denoising update: " + str(i) + " " + str(j) + " " + str(psnr_per_iter[-1]))
-                print()
 
             # Check convergence in terms of PSNR
             if converge_check is True and np.abs(start_PSNR - psnr_per_iter[-1]) < tol:
