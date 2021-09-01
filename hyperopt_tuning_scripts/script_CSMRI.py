@@ -31,8 +31,8 @@ main_problem = CSMRI('./data/Set12/13.png', H=height, W=width, sample_prob=0.5, 
 
 output_fn = 'hyperparam-tuning' + datetime.now().strftime('-%y-%m-%d-%H-%M') + '.csv'
 
-TIME_PER_TRIAL = 10
-MAX_EVALS = 5
+TIME_PER_TRIAL = 100
+MAX_EVALS = 500
 PROBLEM_NAME = 'CSMRI'
 
 with open(output_fn, 'w') as csvfile:
@@ -49,9 +49,9 @@ with open(output_fn, 'w') as csvfile:
 
     # create parameter space
     pspace = (
-        hp.uniform('eta', 1e-5, 1),
+        hp.uniform('eta', 1e-5, 1),   
         scope.int(quniform('mini_batch_size', 1, 1000, q=1)),
-        scope.int(quniform('T2', 1, 1000, q=1))
+        scope.int(quniform('T2', 1, 100, q=1))
     )
 
     pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSVRG")
