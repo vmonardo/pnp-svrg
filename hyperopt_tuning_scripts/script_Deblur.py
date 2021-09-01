@@ -27,16 +27,20 @@ from NLM import NLMDenoiser
 denoiser = NLMDenoiser(filter_size=1, patch_size=4, patch_distance=5)
 
 height, width = 256, 256
-rescale = 75
-noise_level = 0
+rescale = 50
+noise_level = 0.01
 
+eta_min, eta_max = 1e-6, 1
+mb_min, mb_max = 1, 10000
+T2_min, T2_max = 1, 50
+dstr_min, dstr_max = 0, 2
 
 PROBLEM_NAME = 'Deblur'
 
 output_fn = 'hyperparam-tuning' + PROBLEM_NAME + datetime.now().strftime('-%y-%m-%d-%H-%M') + '.csv'
 
-TIME_PER_TRIAL = 20
-MAX_EVALS = 100000
+TIME_PER_TRIAL = 10
+MAX_EVALS = 100
 
 with open(output_fn, 'w') as csvfile:
     writer = csv.writer(csvfile, delimiter=',')
@@ -55,9 +59,10 @@ with open(output_fn, 'w') as csvfile:
 
     # create parameter space
     pspace = (
-        hp.uniform('eta', 1e-6, 1e6),   
-        scope.int(quniform('mini_batch_size', 1, 10000, q=1)),
-        scope.int(quniform('T2', 1, 1000, q=1))
+        hp.uniform('eta', eta_min, eta_max),   
+        scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
+        scope.int(quniform('T2', T2_min, T2_max, q=1)),
+        hp.uniform('dstrength', dstr_min, dstr_max)
     )
 
     pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSVRG")
@@ -73,7 +78,7 @@ with open(output_fn, 'w') as csvfile:
 
     print(results)
 
-    out = svrg_proxy((results['eta'], int(results['mini_batch_size']), int(results['T2'])))
+    out = svrg_proxy((results['eta'], int(results['mini_batch_size']), int(results['T2']), results['dstrength']))
 
     writer.writerow(['eta', 'mini_batch_size', 'T2'])
     writer.writerow([results['eta'], results['mini_batch_size'], results['T2']])
@@ -96,8 +101,9 @@ with open(output_fn, 'w') as csvfile:
 
     # create parameter space
     pspace = (
-        hp.uniform('eta', 1e-7, 1e-5),
-        scope.int(quniform('mini_batch_size', 1, 1000, q=1))
+        hp.uniform('eta', eta_min, eta_max),
+        scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
+        hp.uniform('dstrength', dstr_min, dstr_max)
     )
 
     pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSGD")
@@ -111,7 +117,9 @@ with open(output_fn, 'w') as csvfile:
     )
     pbar.close()
 
-    out = sgd_proxy((results['eta'], int(results['mini_batch_size'])))
+    print(results)
+
+    out = sgd_proxy((results['eta'], int(results['mini_batch_size']), results['dstrength']))
 
     writer.writerow(['eta', 'mini_batch_size'])
     writer.writerow([results['eta'], results['mini_batch_size']])
@@ -134,7 +142,8 @@ with open(output_fn, 'w') as csvfile:
 
     # create parameter space
     pspace = (
-        hp.uniform('eta', 1e-7, 1e-5)
+        hp.uniform('eta', eta_min, eta_max),
+        hp.uniform('dstrength', dstr_min, dstr_max)
     )
 
     pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPGD")
@@ -148,7 +157,9 @@ with open(output_fn, 'w') as csvfile:
     )
     pbar.close()
 
-    out = gd_proxy((results['eta']))
+    print(results)
+
+    out = gd_proxy((results['eta'], results['dstrength']))
 
     writer.writerow(['eta'])
     writer.writerow([results['eta']])
@@ -171,8 +182,9 @@ with open(output_fn, 'w') as csvfile:
 
     # create parameter space
     pspace = (
-        hp.uniform('eta', 1e-7, 1e-5),
-        scope.int(quniform('mini_batch_size', 1, 1000, q=1))
+        hp.uniform('eta', eta_min, eta_max),
+        scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
+        hp.uniform('dstrength', dstr_min, dstr_max)
     )
 
     pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSAGA")
@@ -186,7 +198,9 @@ with open(output_fn, 'w') as csvfile:
     )
     pbar.close()
 
-    out = saga_proxy((results['eta'], int(results['mini_batch_size'])))
+    print(results)
+
+    out = saga_proxy((results['eta'], int(results['mini_batch_size']), results['dstrength']))
 
     writer.writerow(['eta', 'mini_batch_size'])
     writer.writerow([results['eta'], results['mini_batch_size']])
@@ -209,9 +223,10 @@ with open(output_fn, 'w') as csvfile:
 
     # create parameter space
     pspace = (
-        hp.uniform('eta', 1e-7, 1e-5),
-        scope.int(quniform('mini_batch_size', 1, 1000, q=1)),
-        scope.int(quniform('T2', 1, 1000, q=1))
+        hp.uniform('eta', eta_min, eta_max),
+        scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
+        scope.int(quniform('T2', T2_min, T2_max, q=1)),
+        hp.uniform('dstrength', dstr_min, dstr_max)
     )
 
     pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSARAH")
@@ -225,7 +240,9 @@ with open(output_fn, 'w') as csvfile:
     )
     pbar.close()
 
-    out = sarah_proxy((results['eta'], int(results['mini_batch_size']), int(results['T2'])))
+    print(results)
+
+    out = sarah_proxy((results['eta'], int(results['mini_batch_size']), int(results['T2']), results['dstrength']))
 
     writer.writerow(['eta', 'mini_batch_size', 'T2'])
     writer.writerow([results['eta'], results['mini_batch_size'], results['T2']])

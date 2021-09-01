@@ -116,7 +116,7 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
     # return z, time_per_iter, psnr_per_iter, zs, gradient_time, denoise_time
 
 def tune_pnp_saga(args, problem, denoiser, tt, hist_size=50, verbose=True, lr_decay=1, converge_check=True, diverge_check=False):
-    eta, mini_batch_size = args 
+    eta, mini_batch_size, dstrength = args 
     # Initialize logging variables
     time_per_iter = []
     psnr_per_iter = []
@@ -176,10 +176,10 @@ def tune_pnp_saga(args, problem, denoiser, tt, hist_size=50, verbose=True, lr_de
             print(str(i) + " Before denoising:  " + str(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))))
 
         # estimate sigma 
-        sigma_est = estimate_sigma(z, multichannel=True, average_sigmas=True)
+        # sigma_est = estimate_sigma(z, multichannel=True, average_sigmas=True)
 
         # Denoise
-        z = denoiser.denoise(noisy=z, true_sigma=sigma_est)
+        z = denoiser.denoise(noisy=z, sigma_est=dstrength)
 
         # end denoising timing
         denoise_end_time = time.time() - denoise_start_time

@@ -61,6 +61,8 @@ class Problem():
             delta[i] = 0
 
         grad_comp = self.grad_full(w).flatten()
+        print('grad: ', grad)
+        print('grad_comp: ', grad_comp)
         if np.linalg.norm(grad - grad_comp) > 1e-2:
             print('Full Grad check failed!')
             print('norm: ', np.linalg.norm(grad - grad_comp))

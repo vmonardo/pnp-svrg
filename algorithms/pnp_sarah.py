@@ -135,7 +135,7 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
     # return z, time_per_iter, psnr_per_iter, zs, gradient_time, denoise_time
 
 def tune_pnp_sarah(args, problem, denoiser, tt, verbose=True, lr_decay=1, converge_check=True, diverge_check=False):
-    eta, mini_batch_size, T2 = args
+    eta, mini_batch_size, T2, dstrength = args
     # Initialize logging variables
     time_per_iter = []
     psnr_per_iter = []
@@ -214,10 +214,10 @@ def tune_pnp_sarah(args, problem, denoiser, tt, verbose=True, lr_decay=1, conver
             denoise_start_time = time.time()    
 
             # estimate sigma 
-            sigma_est = estimate_sigma(z, multichannel=True, average_sigmas=True)
+            # sigma_est = estimate_sigma(z, multichannel=True, average_sigmas=True)
 
             # Denoise
-            z = denoiser.denoise(noisy=z, true_sigma=sigma_est)
+            z = denoiser.denoise(noisy=z, sigma_est=dstrength)
 
             # end denoising timing
             denoise_end_time = time.time() - denoise_start_time

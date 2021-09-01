@@ -19,10 +19,8 @@ class Deblur(Problem):
         self.scale_percent = scale_percent
 
         # Identify kernel type
-        if kernel_path is not None:
-            self.kernel_path = kernel_path
-        if kernel is not None:
-            self.kernel = kernel
+        self.kernel_path = kernel_path
+        self.kernel = kernel
         if kernel_path is None and kernel is None:
             raise Exception('Need to pass in kernel path or kernel as image')
 
@@ -58,18 +56,30 @@ class Deblur(Problem):
 
         # Store initialization (as a vector)
         self.Xinit = self.fft_deblur(xhat, self.B)
+        # self.Xinit = (tmp - tmp.min())/(tmp.max() - tmp.min())
 
     def _load_kernel(self):
         # Load the blurring kernel
         if self.kernel_path is not None:
-            self.B = np.array(Image.open(self.kernel_path).resize((self.H, self.W)))
+            tmp = np.array(Image.open(self.kernel_path).resize((self.H, self.W)))
         elif self.kernel == "Identity":
-            self.B = np.zeros(self.H*self.W)
-            self.B[0] = 1
+            # no blurring
+            tmp = np.zeros(self.N)
+            tmp[0] = 1
+        elif self.kernel == "Minimal":
+            # small blur
+            tmp = np.zeros((self.H, self.W))
+            tmp[0,0] = 1
+            tmp[40,80] = 1
+            tmp[41,80] = 1
+            tmp[42,80] = 1
+
         elif self.kernel is not None:
             self.B = self.kernel
         else:
             raise Exception('Need to pass in blur kernel path or kernel')
+        
+        self.B = tmp / np.linalg.norm(tmp)
 
     def _generate_bop(self):
         # Create bilinear interpolation operator using Pylops
@@ -79,10 +89,11 @@ class Deblur(Problem):
             # Create grid to instantiate downsized image
             ptsH = np.linspace(eps, self.H - (1 + eps), self.lrH)    
             ptsW = np.linspace(eps, self.W - (1 + eps), self.lrW)   
-            meshH, meshZ = np.meshgrid(ptsH, ptsW)
+            meshW, meshH = np.meshgrid(ptsH, ptsW)                  # idk why W and H have to be flipped
+                                                                    # but result is transposed if not 
 
             # create downsizing linear operator 
-            iava = np.vstack([meshH.flatten(), meshZ.flatten()])
+            iava = np.vstack([meshH.flatten(), meshW.flatten()])
             self.Bop = pylops.signalprocessing.Bilinear(iava, (self.H, self.W))
 
     def forward_model(self, w):
@@ -90,15 +101,17 @@ class Deblur(Problem):
         return self.Bop*self.fft_blur(w, self.B)
 
     def f(self, w):
-        # f(W) = 1 / 2*M || Y - M o F{W} ||_F^2
+        # f(W) = 1 / 2*M || Y - S B{W} ||_F^2
         # Compute data fidelity function value at a given point
         return np.linalg.norm(self.Y - self.forward_model(w)) ** 2 / 2 / self.M
 
     def fft_blur(self, M1, M2):
-        return np.real(np.fft.ifft( np.fft.fft(M1.flatten())*np.fft.fft(M2.flatten()) )) 
+        tmp = np.real(np.fft.ifft( np.fft.fft(M1.flatten())*np.fft.fft(M2.flatten()) ))
+        return tmp.reshape(self.H, self.W).flatten()
 
     def fft_deblur(self, M1, M2):
-        return np.real(np.fft.ifft( np.fft.fft(M1.flatten())/np.fft.fft(M2.flatten()) )) 
+        tmp = np.real(np.fft.ifft( np.fft.fft(M1.flatten())/np.fft.fft(M2.flatten()) )) 
+        return tmp.reshape(self.H, self.W).flatten()
 
     ## nab l(x) = B^T S^T (S B Z - y) / m
     def grad_full(self, z):
@@ -135,3 +148,11 @@ if __name__ == '__main__':
     p = Deblur(img_path='./data/Set12/01.png', kernel_path='./data/kernel.png', H=height, W=width, sigma=noise_level, scale_percent=rescale)
     p.grad_full_check()
     p.grad_stoch_check()
+
+    # check that fft_blur and fft_deblur are inverses
+    w1 = np.random.uniform(0.0, 1.0, p.N)
+    w2 = np.random.uniform(0.0, 1.0, p.N)
+
+    x = p.fft_blur(w1, w2)
+    y = p.fft_deblur(x, w2)
+    print(y, w1)
