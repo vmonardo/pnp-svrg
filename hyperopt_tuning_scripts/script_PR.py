@@ -27,17 +27,18 @@ from NLM import NLMDenoiser
 denoiser = NLMDenoiser(filter_size=1, patch_size=4, patch_distance=5)
 
 height, width = 32, 32
-alpha = 10 # meas / dims
-main_problem = PhaseRetrieval('./data/Set12/13.png', H=height, W=width, num_meas=alpha*height*width, sigma=5) # Brain MRI
+
+alpha = 20 # meas / dims
+main_problem = PhaseRetrieval(img_path='./data/Set12/01.png', H=height, W=width, num_meas = alpha*height*width)
 
 PROBLEM_NAME = 'PR'
 
 output_fn = 'hyperparam-tuning' + PROBLEM_NAME + datetime.now().strftime('-%y-%m-%d-%H-%M') + '.csv'
 
-TIME_PER_TRIAL = 100
+TIME_PER_TRIAL = 10
 MAX_EVALS = 500
 
-eta_min, eta_max = 0, 10
+eta_min, eta_max = 0, 1
 mb_min, mb_max = 1, 200
 T2_min, T2_max = 5, 100
 dstr_min, dstr_max = 0, 10
