@@ -37,6 +37,10 @@ output_fn = 'hyperparam-tuning' + PROBLEM_NAME + datetime.now().strftime('-%y-%m
 TIME_PER_TRIAL = 100
 MAX_EVALS = 500
 
+eta_min, eta_max = 0, 10
+mb_min, mb_max = 1, 200
+T2_min, T2_max = 5, 100
+dstr_min, dstr_max = 0, 10
 
 with open(output_fn, 'w') as csvfile:
     writer = csv.writer(csvfile, delimiter=',')
@@ -52,9 +56,10 @@ with open(output_fn, 'w') as csvfile:
 
     # create parameter space
     pspace = (
-        hp.uniform('eta', 1e-5, 1),   
-        scope.int(quniform('mini_batch_size', 1, 1000, q=1)),
-        scope.int(quniform('T2', 1, 100, q=1))
+        hp.uniform('eta', eta_min, eta_max),   
+        scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
+        scope.int(quniform('T2', T2_min, T2_max, q=1)),
+        hp.uniform('dstrength', dstr_min, dstr_max)
     )
 
     pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSVRG")
@@ -88,8 +93,9 @@ with open(output_fn, 'w') as csvfile:
 
     # create parameter space
     pspace = (
-        hp.uniform('eta', 1e-5, 1),
-        scope.int(quniform('mini_batch_size', 1, 1000, q=1))
+        hp.uniform('eta', eta_min, eta_max),
+        scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
+        hp.uniform('dstrength', dstr_min, dstr_max)
     )
 
     pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSGD")
@@ -123,7 +129,8 @@ with open(output_fn, 'w') as csvfile:
 
     # create parameter space
     pspace = (
-        hp.uniform('eta', 1e-5, 1)
+        hp.uniform('eta', eta_min, eta_max),
+        hp.uniform('dstrength', dstr_min, dstr_max)
     )
 
     pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPGD")
@@ -157,8 +164,9 @@ with open(output_fn, 'w') as csvfile:
 
     # create parameter space
     pspace = (
-        hp.uniform('eta', 1e-5, 1),
-        scope.int(quniform('mini_batch_size', 1, 1000, q=1))
+        hp.uniform('eta', eta_min, eta_max),
+        scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
+        hp.uniform('dstrength', dstr_min, dstr_max)
     )
 
     pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSAGA")
@@ -192,9 +200,10 @@ with open(output_fn, 'w') as csvfile:
 
     # create parameter space
     pspace = (
-        hp.uniform('eta', 1e-5, 1),
-        scope.int(quniform('mini_batch_size', 1, 1000, q=1)),
-        scope.int(quniform('T2', 1, 1000, q=1))
+        hp.uniform('eta', eta_min, eta_max),
+        scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
+        scope.int(quniform('T2', T2_min, T2_max, q=1)),
+        hp.uniform('dstrength', dstr_min, dstr_max)
     )
 
     pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSARAH")

@@ -197,8 +197,10 @@ def tune_pnp_svrg(args, problem, denoiser, tt, verbose=True, lr_decay=1, converg
                 print("After denoising update: " + str(i) + " " + str(j) + " " + str(psnr_per_iter[-1]))
 
             # Check convergence in terms of PSNR
-            if converge_check is True and np.abs(start_PSNR - psnr_per_iter[-1]) < tol:
+            if converge_check is True and (np.abs(start_PSNR - psnr_per_iter[-1]) < tol) or start_PSNR > psnr_per_iter[-1]:
                 break_out_flag = True
+                if start_PSNR > psnr_per_iter[-1]:
+                    psnr_per_iter[-1] = -999
                 # print('Problem Converged')
                 break
             # Check divergence of PSNR
@@ -210,7 +212,7 @@ def tune_pnp_svrg(args, problem, denoiser, tt, verbose=True, lr_decay=1, converg
 
     # output denoised image, time stats, psnr stats
     return {
-        'loss': -(psnr_per_iter[-1] - psnr_per_iter[0]),    # Look for hyperparameters that increase the positive change in PSNR 
+        'loss': -psnr_per_iter[-1],    # Look for hyperparameters that increase the positive change in PSNR 
         'status': STATUS_OK,
         'z': z,
         'time_per_iter': time_per_iter,

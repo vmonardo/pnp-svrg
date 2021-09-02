@@ -22,7 +22,7 @@ class PhaseRetrieval(Problem):
         noises = np.random.normal(0, self.sigma, tmp.shape)
 
         self.Y = tmp + noises
-        self.Xinit = self.spec_init()
+        self.Xinit = np.real(self.spec_init())
 
     def spec_init(self):
         # create data matrix

@@ -27,19 +27,19 @@ from NLM import NLMDenoiser
 denoiser = NLMDenoiser(filter_size=1, patch_size=4, patch_distance=5)
 
 height, width = 256, 256
-rescale = 75
-noise_level = 0
+rescale = 50
+noise_level = 0.1
 
-eta_min, eta_max = 0, 1000
+eta_min, eta_max = 1, 100000
 mb_min, mb_max = 1, 200
-T2_min, T2_max = 1, 100
-dstr_min, dstr_max = 0, .01
+T2_min, T2_max = 5, 100
+dstr_min, dstr_max = 0, 10
 
 PROBLEM_NAME = 'Deblur'
 
 output_fn = 'hyperparam-tuning' + PROBLEM_NAME + datetime.now().strftime('-%y-%m-%d-%H-%M') + '.csv'
 
-TIME_PER_TRIAL = 20
+TIME_PER_TRIAL = 60
 MAX_EVALS = 1000
 
 with open(output_fn, 'w') as csvfile:
