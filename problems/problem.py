@@ -18,7 +18,7 @@ class Problem():
 
         # Normalize image such that all pixels are in rage [0,1]
         tmp = (tmp - np.min(tmp)) / (np.max(tmp) - np.min(tmp))
-        self.X = tmp.reshape(self.N)    # Pass image as np array of specified dimensions
+        self.X = tmp.ravel()    # Pass image as np array of specified dimensions
 
         # Initialize essential parameters
         # self.Y = np.empty(self.M)
@@ -63,7 +63,7 @@ class Problem():
         grad_comp = self.grad_full(w).flatten()
         print('grad: ', grad)
         print('grad_comp: ', grad_comp)
-        if np.linalg.norm(grad - grad_comp) > 1e-2:
+        if np.linalg.norm(grad - grad_comp) > 1e-4:
             print('Full Grad check failed!')
             print('norm: ', np.linalg.norm(grad - grad_comp))
             print('grad diff: ', grad)

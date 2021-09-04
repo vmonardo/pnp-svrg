@@ -67,6 +67,8 @@ with open(output_fn, 'w') as csvfile:
     )
     pbar.close()
 
+    print(results)
+
     out = svrg_proxy((results['eta'], int(results['mini_batch_size']), int(results['T2'])))
 
     writer.writerow(['eta', 'mini_batch_size', 'T2'])
@@ -102,6 +104,8 @@ with open(output_fn, 'w') as csvfile:
     )
     pbar.close()
 
+    print(results)
+
     out = sgd_proxy((results['eta'], int(results['mini_batch_size'])))
 
     writer.writerow(['eta', 'mini_batch_size'])
@@ -135,6 +139,8 @@ with open(output_fn, 'w') as csvfile:
         max_evals=MAX_EVALS
     )
     pbar.close()
+
+    print(results)
 
     out = gd_proxy((results['eta']))
 
@@ -171,6 +177,8 @@ with open(output_fn, 'w') as csvfile:
     )
     pbar.close()
 
+    print(results)
+
     out = saga_proxy((results['eta'], int(results['mini_batch_size'])))
 
     writer.writerow(['eta', 'mini_batch_size'])
@@ -206,6 +214,8 @@ with open(output_fn, 'w') as csvfile:
         max_evals=MAX_EVALS
     )
     pbar.close()
+
+    print(results)
 
     out = sarah_proxy((results['eta'], int(results['mini_batch_size']), int(results['T2'])))
 

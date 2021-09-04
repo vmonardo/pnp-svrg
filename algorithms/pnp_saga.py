@@ -145,7 +145,7 @@ def tune_pnp_saga(args, problem, denoiser, tt, hist_size=50, verbose=True, lr_de
     
     time_per_iter.append(time.time() - start_time)
     
-    psnr_per_iter.append(peak_signal_noise_ratio(problem.X, z))
+    psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W)))
     
     while (time.time() - elapsed) < tt:
         # start PSNR track

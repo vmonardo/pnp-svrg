@@ -35,13 +35,13 @@ PROBLEM_NAME = 'PR'
 
 output_fn = 'hyperparam-tuning' + PROBLEM_NAME + datetime.now().strftime('-%y-%m-%d-%H-%M') + '.csv'
 
-TIME_PER_TRIAL = 10
-MAX_EVALS = 500
+TIME_PER_TRIAL = 30
+MAX_EVALS = 1000
 
-eta_min, eta_max = 0, 1
-mb_min, mb_max = 1, 200
-T2_min, T2_max = 5, 100
-dstr_min, dstr_max = 0, 10
+eta_min, eta_max = 0, .1
+mb_min, mb_max = 1, main_problem.M
+T2_min, T2_max = 1, main_problem.M
+dstr_min, dstr_max = 0, 2
 
 with open(output_fn, 'w') as csvfile:
     writer = csv.writer(csvfile, delimiter=',')
@@ -52,72 +52,76 @@ with open(output_fn, 'w') as csvfile:
 
     writer.writerow([PROBLEM_NAME, 'PNPSVRG'])
 
-    # create proxy function for hyperopt tuning
-    svrg_proxy = partial(tune_pnp_svrg, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
+    # # create proxy function for hyperopt tuning
+    # svrg_proxy = partial(tune_pnp_svrg, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
 
-    # create parameter space
-    pspace = (
-        hp.uniform('eta', eta_min, eta_max),   
-        scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
-        scope.int(quniform('T2', T2_min, T2_max, q=1)),
-        hp.uniform('dstrength', dstr_min, dstr_max)
-    )
+    # # create parameter space
+    # pspace = (
+    #     hp.uniform('eta', eta_min, eta_max),   
+    #     scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
+    #     scope.int(quniform('T2', T2_min, T2_max, q=1)),
+    #     hp.uniform('dstrength', dstr_min, dstr_max)
+    # )
 
-    pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSVRG")
-    trials = Trials()
-    results = fmin(
-        svrg_proxy,
-        space=pspace,
-        algo=tpe.suggest,
-        trials=trials,
-        max_evals=MAX_EVALS
-    )
-    pbar.close()
+    # pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSVRG")
+    # trials = Trials()
+    # results = fmin(
+    #     svrg_proxy,
+    #     space=pspace,
+    #     algo=tpe.suggest,
+    #     trials=trials,
+    #     max_evals=MAX_EVALS
+    # )
+    # pbar.close()
 
-    out = svrg_proxy((results['eta'], int(results['mini_batch_size']), int(results['T2'])))
+    # print(results)
 
-    writer.writerow(['eta', 'mini_batch_size', 'T2'])
-    writer.writerow([results['eta'], results['mini_batch_size'], results['T2']])
-    writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
-    writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
+    # out = svrg_proxy((results['eta'], int(results['mini_batch_size']), int(results['T2']), results['dstrength']))
 
-    print(results['eta'], results['mini_batch_size'], results['T2'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
+    # writer.writerow(['eta', 'mini_batch_size', 'T2'])
+    # writer.writerow([results['eta'], results['mini_batch_size'], results['T2']])
+    # writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
+    # writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
 
-    ##########################
-    # PNP SGD TUNING
-    ##########################
+    # print(results['eta'], results['mini_batch_size'], results['T2'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
 
-    writer.writerow([PROBLEM_NAME, 'PNPSGD'])
+    # ##########################
+    # # PNP SGD TUNING
+    # ##########################
 
-    # create proxy function for hyperopt tuning
-    sgd_proxy = partial(tune_pnp_sgd, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
+    # writer.writerow([PROBLEM_NAME, 'PNPSGD'])
 
-    # create parameter space
-    pspace = (
-        hp.uniform('eta', eta_min, eta_max),
-        scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
-        hp.uniform('dstrength', dstr_min, dstr_max)
-    )
+    # # create proxy function for hyperopt tuning
+    # sgd_proxy = partial(tune_pnp_sgd, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
 
-    pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSGD")
-    trials = Trials()
-    results = fmin(
-        sgd_proxy,
-        space=pspace,
-        algo=tpe.suggest,
-        trials=trials,
-        max_evals=MAX_EVALS
-    )
-    pbar.close()
+    # # create parameter space
+    # pspace = (
+    #     hp.uniform('eta', eta_min, eta_max),
+    #     scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
+    #     hp.uniform('dstrength', dstr_min, dstr_max)
+    # )
 
-    out = sgd_proxy((results['eta'], int(results['mini_batch_size'])))
+    # pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSGD")
+    # trials = Trials()
+    # results = fmin(
+    #     sgd_proxy,
+    #     space=pspace,
+    #     algo=tpe.suggest,
+    #     trials=trials,
+    #     max_evals=MAX_EVALS
+    # )
+    # pbar.close()
 
-    writer.writerow(['eta', 'mini_batch_size'])
-    writer.writerow([results['eta'], results['mini_batch_size']])
-    writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
-    writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
+    # print(results)
 
-    print(results['eta'], results['mini_batch_size'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
+    # out = sgd_proxy((results['eta'], int(results['mini_batch_size']), results['dstrength']))
+
+    # writer.writerow(['eta', 'mini_batch_size'])
+    # writer.writerow([results['eta'], results['mini_batch_size']])
+    # writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
+    # writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
+
+    # print(results['eta'], results['mini_batch_size'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
 
     ##########################
     # PNP GD TUNING
@@ -145,7 +149,9 @@ with open(output_fn, 'w') as csvfile:
     )
     pbar.close()
 
-    out = gd_proxy((results['eta']))
+    print(results)
+
+    out = gd_proxy((results['eta'], results['dstrength']))
 
     writer.writerow(['eta'])
     writer.writerow([results['eta']])
@@ -154,78 +160,82 @@ with open(output_fn, 'w') as csvfile:
 
     print(results['eta'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
 
-    ##########################
-    # PNP SAGA TUNING
-    ##########################
+    # ##########################
+    # # PNP SAGA TUNING
+    # ##########################
 
-    writer.writerow([PROBLEM_NAME, 'PNPSAGA'])
+    # writer.writerow([PROBLEM_NAME, 'PNPSAGA'])
 
-    # create proxy function for hyperopt tuning
-    saga_proxy = partial(tune_pnp_saga, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
+    # # create proxy function for hyperopt tuning
+    # saga_proxy = partial(tune_pnp_saga, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
 
-    # create parameter space
-    pspace = (
-        hp.uniform('eta', eta_min, eta_max),
-        scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
-        hp.uniform('dstrength', dstr_min, dstr_max)
-    )
+    # # create parameter space
+    # pspace = (
+    #     hp.uniform('eta', eta_min, eta_max),
+    #     scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
+    #     hp.uniform('dstrength', dstr_min, dstr_max)
+    # )
 
-    pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSAGA")
-    trials = Trials()
-    results = fmin(
-        saga_proxy,
-        space=pspace,
-        algo=tpe.suggest,
-        trials=trials,
-        max_evals=MAX_EVALS
-    )
-    pbar.close()
+    # pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSAGA")
+    # trials = Trials()
+    # results = fmin(
+    #     saga_proxy,
+    #     space=pspace,
+    #     algo=tpe.suggest,
+    #     trials=trials,
+    #     max_evals=MAX_EVALS
+    # )
+    # pbar.close()
 
-    out = saga_proxy((results['eta'], int(results['mini_batch_size'])))
+    # print(results)
 
-    writer.writerow(['eta', 'mini_batch_size'])
-    writer.writerow([results['eta'], results['mini_batch_size']])
-    writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
-    writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
+    # out = saga_proxy((results['eta'], int(results['mini_batch_size']), results['dstrength']))
 
-    print(results['eta'], results['mini_batch_size'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
+    # writer.writerow(['eta', 'mini_batch_size'])
+    # writer.writerow([results['eta'], results['mini_batch_size']])
+    # writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
+    # writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
 
-    ##########################
-    # PNPSARAH TUNING
-    ##########################
+    # print(results['eta'], results['mini_batch_size'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
 
-    writer.writerow([PROBLEM_NAME, 'PNPSARAH'])
+    # ##########################
+    # # PNPSARAH TUNING
+    # ##########################
 
-    # create proxy function for hyperopt tuning
-    sarah_proxy = partial(tune_pnp_sarah, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
+    # writer.writerow([PROBLEM_NAME, 'PNPSARAH'])
 
-    # create parameter space
-    pspace = (
-        hp.uniform('eta', eta_min, eta_max),
-        scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
-        scope.int(quniform('T2', T2_min, T2_max, q=1)),
-        hp.uniform('dstrength', dstr_min, dstr_max)
-    )
+    # # create proxy function for hyperopt tuning
+    # sarah_proxy = partial(tune_pnp_sarah, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
 
-    pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSARAH")
-    trials = Trials()
-    results = fmin(
-        sarah_proxy,
-        space=pspace,
-        algo=tpe.suggest,
-        trials=trials,
-        max_evals=MAX_EVALS
-    )
-    pbar.close()
+    # # create parameter space
+    # pspace = (
+    #     hp.uniform('eta', eta_min, eta_max),
+    #     scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
+    #     scope.int(quniform('T2', T2_min, T2_max, q=1)),
+    #     hp.uniform('dstrength', dstr_min, dstr_max)
+    # )
 
-    out = sarah_proxy((results['eta'], int(results['mini_batch_size']), int(results['T2'])))
+    # pbar = tqdm(total=MAX_EVALS, desc="Hyperopt PNPSARAH")
+    # trials = Trials()
+    # results = fmin(
+    #     sarah_proxy,
+    #     space=pspace,
+    #     algo=tpe.suggest,
+    #     trials=trials,
+    #     max_evals=MAX_EVALS
+    # )
+    # pbar.close()
 
-    writer.writerow(['eta', 'mini_batch_size', 'T2'])
-    writer.writerow([results['eta'], results['mini_batch_size'], results['T2']])
-    writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
-    writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
+    # print(results)
 
-    print(results['eta'], results['mini_batch_size'], results['T2'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
+    # out = sarah_proxy((results['eta'], int(results['mini_batch_size']), int(results['T2']), results['dstrength']))
+
+    # writer.writerow(['eta', 'mini_batch_size', 'T2'])
+    # writer.writerow([results['eta'], results['mini_batch_size'], results['T2']])
+    # writer.writerow(['loss', 'initial PSNR', 'output PSNR'])
+    # writer.writerow([out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1]])
+
+    # print(results['eta'], results['mini_batch_size'], results['T2'], out['loss'], out['psnr_per_iter'][0], out['psnr_per_iter'][-1])
  
 
 

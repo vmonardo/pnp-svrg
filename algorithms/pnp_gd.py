@@ -16,7 +16,6 @@ def pnp_gd(problem, denoiser, eta, tt, verbose=True, lr_decay=1, converge_check=
 
     # Main PnP GD routine
     z = np.copy(problem.Xinit)
-    zs = [z]
 
     denoiser.t = 0
 
@@ -35,8 +34,8 @@ def pnp_gd(problem, denoiser, eta, tt, verbose=True, lr_decay=1, converge_check=
         v = problem.grad_full(z)
 
         # Gradient update
-        z = z.reshape(problem.H,problem.W)
-        z -= (eta*lr_decay**denoiser.t)*v.reshape(problem.H,problem.W)
+        z = z.ravel()
+        z -= (eta*lr_decay**denoiser.t)*v
 
         # end gradient timing
         grad_end_time = time.time() - grad_start_time
@@ -44,21 +43,20 @@ def pnp_gd(problem, denoiser, eta, tt, verbose=True, lr_decay=1, converge_check=
 
         if verbose:
             print(str(i) + " Before denoising:  " + str(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))))
-            
+
         # start denoising timing
         denoise_start_time = time.time()
 
         # estimate sigma 
-        sigma_est = estimate_sigma(z, multichannel=True, average_sigmas=True)
+        # create copy to denoise
+        z0 = np.copy(z).reshape(problem.H, problem.W)
 
         # Denoise
-        z = denoiser.denoise(noisy=z, true_sigma=sigma_est)
+        z0 = denoiser.denoise(noisy=z0, sigma_est=0)
         
         # end denoising timing
         denoise_end_time = time.time() - denoise_start_time
         denoise_time += denoise_end_time
-
-        zs.append(z)
 
         denoiser.t += 1
 
@@ -66,6 +64,8 @@ def pnp_gd(problem, denoiser, eta, tt, verbose=True, lr_decay=1, converge_check=
         time_per_iter.append(grad_end_time + denoise_end_time)
 
         psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W)))
+
+        z = np.copy(z0)
 
         if verbose:
             print(str(i) + " After denoising:  " + str(psnr_per_iter[-1]))
@@ -85,7 +85,6 @@ def pnp_gd(problem, denoiser, eta, tt, verbose=True, lr_decay=1, converge_check=
         'z': z,
         'time_per_iter': time_per_iter,
         'psnr_per_iter': psnr_per_iter,
-        'zs': zs,
         'gradient_time': gradient_time,
         'denoise_time': denoise_time
     }
@@ -99,8 +98,7 @@ def tune_pnp_gd(args, problem, denoiser, tt, verbose=True, lr_decay=1, converge_
     denoise_time = 0
 
     # Main PnP GD routine
-    z = np.copy(problem.Xinit)
-    zs = [z]
+    z = np.copy.deepcopy(problem.Xinit)
 
     denoiser.t = 0
 
@@ -142,8 +140,6 @@ def tune_pnp_gd(args, problem, denoiser, tt, verbose=True, lr_decay=1, converge_
         denoise_end_time = time.time() - denoise_start_time
         denoise_time += denoise_end_time
 
-        zs.append(z)
-
         denoiser.t += 1
 
         # Log timing
@@ -171,7 +167,6 @@ def tune_pnp_gd(args, problem, denoiser, tt, verbose=True, lr_decay=1, converge_
         'z': z,
         'time_per_iter': time_per_iter,
         'psnr_per_iter': psnr_per_iter,
-        'zs': zs,
         'gradient_time': gradient_time,
         'denoise_time': denoise_time
     }

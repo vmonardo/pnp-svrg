@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
-from denoisers import Denoise
+from denoiser import Denoise
 from bm3d import bm3d
 
 class BM3DDenoiser(Denoise):
@@ -12,8 +12,11 @@ class BM3DDenoiser(Denoise):
         self.filter_decay = filter_decay
         self.noise_est = noise_est
 
-    def denoise(self, noisy):
-        return bm3d(noisy, self.noise_est*self.filter_decay**self.t)
+    def denoise(self, noisy, sigma_est=0):
+        if sigma_est > 0:
+            return bm3d(noisy, sigma_est)
+        else:
+            return bm3d(noisy, self.noise_est*self.filter_decay**self.t)
 
 ### For documentation, see:
 # https://webpages.tuni.fi/foi/GCF-BM3D/

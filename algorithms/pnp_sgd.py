@@ -49,11 +49,8 @@ def pnp_sgd(problem, denoiser, eta, tt, mini_batch_size, verbose=True, lr_decay=
         # start denoising timing
         denoise_start_time = time.time()
 
-        # estimate sigma 
-        sigma_est = estimate_sigma(z, multichannel=True, average_sigmas=True)
-
         # Denoise
-        z = denoiser.denoise(noisy=z, true_sigma=sigma_est)
+        z = denoiser.denoise(noisy=z, sigma_est=0)
 
         # end denoising timing
         denoise_end_time = time.time() - denoise_start_time

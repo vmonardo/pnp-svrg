@@ -16,7 +16,6 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
     
     # Main PnP-SVRG routine
     z = np.copy(problem.Xinit)
-    zs = [z]
 
     denoiser.t = 0
 
@@ -94,8 +93,6 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
             # end denoising timing
             denoise_end_time = time.time() - denoise_start_time
             denoise_time += denoise_end_time
-            
-            zs.append(z)
 
             denoiser.t += 1
 
@@ -128,7 +125,6 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
         'z': z,
         'time_per_iter': time_per_iter,
         'psnr_per_iter': psnr_per_iter,
-        'zs': zs,
         'gradient_time': gradient_time,
         'denoise_time': denoise_time
     }
