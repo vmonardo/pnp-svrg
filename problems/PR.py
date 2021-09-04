@@ -83,4 +83,4 @@ if __name__ == '__main__':
     denoiser = NLMDenoiser(filter_size=0, patch_size=4, patch_distance=5)
     sys.path.append('algorithms/')
     from pnp_sarah import pnp_sarah
-    output = pnp_sarah(problem=p, denoiser=denoiser, eta=2500, tt=200, T2=20, mini_batch_size=2000, verbose=True)
+    output = pnp_sarah(problem=p, denoiser=denoiser, eta=.002, tt=10, T2=50, mini_batch_size=100, verbose=True)

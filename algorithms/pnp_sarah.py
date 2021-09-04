@@ -15,8 +15,8 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
     denoise_time = 0
     
     # Main PnP-SVRG routine
-    z = np.copy(problem.Xinit)
-
+    z = np.copy(problem.Xinit).ravel()
+    
     denoiser.t = 0
 
     i = 0
@@ -29,15 +29,15 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
         if break_out_flag:
             break
         # Initialize ``step 0'' points
-        w_previous = np.copy(z) 
+        w_previous = np.copy(z).ravel()
 
         # start gradient timing
         grad_start_time = time.time()
 
-        v_previous = problem.grad_full(z)
+        v_previous = problem.grad_full(z).ravel()
         
         # General ``step 1'' point
-        w_next = w_previous.reshape(problem.H,problem.W) - eta*v_previous.reshape(problem.H,problem.W)
+        w_next = w_previous - eta*v_previous
 
         # end gradient timing
         grad_end_time = time.time() - grad_start_time
@@ -46,6 +46,8 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
         # start denoising timing
         denoise_start_time = time.time()
 
+        # make denoising variable
+        w_next = w_next.reshape(problem.H, problem.W)
         w_next = denoiser.denoise(noisy=w_next)
 
         # end denoising timing
@@ -55,10 +57,12 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
         time_per_iter.append(grad_end_time + denoise_end_time)
         psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), w_next))
 
+        w_next = w_next.ravel()
+
         # inner loop
         for j in range(T2): 
             if (time.time() - elapsed) >= tt:
-                return z, time_per_iter, psnr_per_iter, zs
+                break
             
             # start PSNR track
             start_PSNR = peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))
@@ -68,11 +72,10 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
 
             # calculate recursive stochastic variance-reduced gradient
             mini_batch = problem.select_mb(mini_batch_size)
-            v_next = (problem.grad_stoch(w_next, mini_batch) - problem.grad_stoch(w_previous, mini_batch)) / mini_batch_size + v_previous
+            v_next = (problem.grad_stoch(w_next, mini_batch).ravel() - problem.grad_stoch(w_previous, mini_batch).ravel()) / mini_batch_size + v_previous.ravel()
 
             # Gradient update
-            z = z.reshape(problem.H,problem.W)
-            z -= (eta*lr_decay**denoiser.t)*v_next.reshape(problem.H,problem.W)
+            z -= (eta*lr_decay**denoiser.t)*v_next
 
             # end gradient timing
             grad_end_time = time.time() - grad_start_time
@@ -84,11 +87,9 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
             # start denoising timing
             denoise_start_time = time.time()    
 
-            # estimate sigma 
-            sigma_est = estimate_sigma(z, multichannel=True, average_sigmas=True)
-
             # Denoise
-            z = denoiser.denoise(noisy=z, true_sigma=sigma_est)
+            z = z.reshape(problem.H, problem.W)
+            z = denoiser.denoise(noisy=z)
 
             # end denoising timing
             denoise_end_time = time.time() - denoise_start_time
@@ -98,11 +99,13 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
 
             # update recursion points
             v_previous = np.copy(v_next)
-            w_previous = np.copy(z) 
+            w_previous = np.copy(z.ravel()) 
             
             # stop timing
             time_per_iter.append(grad_end_time + denoise_end_time)
-            psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W)))
+            psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z))
+
+            z = z.ravel()
 
             if verbose:
                 print("After denoising update: " + str(i) + " " + str(j) + " " + str(psnr_per_iter[-1]))
