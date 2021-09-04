@@ -39,7 +39,7 @@ class PhaseRetrieval(Problem):
         D = (D + D.T) / 2
         w, v = eigh(D, eigvals=(self.N - 1,self.N - 1))
         v0 = v/ la.norm(v) 
-        return v0
+        return v0.ravel()
 
     def forward_model(self, w):
         # Y = |Ax|
@@ -62,7 +62,7 @@ class PhaseRetrieval(Problem):
         A_gamma = self.A[index]
         tmp = A_gamma.dot(w).ravel()
         Weight = np.divide((np.absolute(tmp)  - self.Y[index]),np.absolute(tmp))
-        return np.conj(A_gamma).T.dot(Weight * tmp).reshape(self.N, 1)
+        return np.conj(A_gamma).T.dot(Weight * tmp).ravel()
 
     def NMSE(self, z):
         return np.linalg.norm(self.X*self.X.T - z*z.T) / np.linalg.norm(self.X*self.X.T)
@@ -82,5 +82,6 @@ if __name__ == '__main__':
     from NLM import NLMDenoiser
     denoiser = NLMDenoiser(filter_size=0, patch_size=4, patch_distance=5)
     sys.path.append('algorithms/')
-    from pnp_sarah import pnp_sarah
-    output = pnp_sarah(problem=p, denoiser=denoiser, eta=.002, tt=10, T2=50, mini_batch_size=100, verbose=True)
+    from pnp_saga import pnp_saga
+    # output = pnp_sarah(problem=p, denoiser=denoiser, eta=.002, tt=10, T2=50, mini_batch_size=100, verbose=True)
+    output = pnp_saga(problem=p, denoiser=denoiser, eta=.002, tt=10, mini_batch_size=100, verbose=True)

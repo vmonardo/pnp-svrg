@@ -9,6 +9,7 @@ class Problem():
         self.H = H                  # Height of the image
         self.W = W                  # Width of the image
         self.N = H*W                # Dimensionality of the problem
+        self.M = self.N             # BE SURE TO SET IN YOUR PROBLEM
 
         # Load in Image to specified dimensions (H,W)
         if img_path is not None:
@@ -22,7 +23,7 @@ class Problem():
 
         # Initialize essential parameters
         # self.Y = np.empty(self.M)
-        self.Xinit = np.empty_like(tmp)
+        self.Xinit = np.empty_like(self.X)
     
     def get_item(self, key):
         return self.__dict__[key]
@@ -101,4 +102,4 @@ if __name__ == '__main__':
 
     p = Problem(img_path='./data/Set12/01.png', H=height, W=width)
     x = p.select_mb(height*width)
-    print(sum(sum(x)), p.N)
+    print(x, x.shape, p.N)
