@@ -17,7 +17,6 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
     
     # Main PnP-SVRG routine
     z = np.copy(problem.Xinit)
-    zs = [z]
 
     denoiser.t = 0
 
@@ -80,8 +79,6 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
             denoise_end_time = time.time() - denoise_start_time
             denoise_time += denoise_end_time
 
-            zs.append(z)
-
             denoiser.t += 1
 
             # Log timing
@@ -106,7 +103,6 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
         'z': z,
         'time_per_iter': time_per_iter,
         'psnr_per_iter': psnr_per_iter,
-        'zs': zs,
         'gradient_time': gradient_time,
         'denoise_time': denoise_time
     }
@@ -122,7 +118,6 @@ def tune_pnp_svrg(args, problem, denoiser, tt, verbose=True, lr_decay=1, converg
 
     # Main PnP-SVRG routine
     z = np.copy(problem.Xinit)
-    zs = [z]
 
     denoiser.t = 0
 
@@ -185,8 +180,6 @@ def tune_pnp_svrg(args, problem, denoiser, tt, verbose=True, lr_decay=1, converg
             denoise_end_time = time.time() - denoise_start_time
             denoise_time += denoise_end_time
 
-            zs.append(z)
-
             denoiser.t += 1
 
             # Log timing
@@ -215,7 +208,6 @@ def tune_pnp_svrg(args, problem, denoiser, tt, verbose=True, lr_decay=1, converg
         'z': z,
         'time_per_iter': time_per_iter,
         'psnr_per_iter': psnr_per_iter,
-        'zs': zs,
         'gradient_time': gradient_time,
         'denoise_time': denoise_time
     }

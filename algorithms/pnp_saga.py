@@ -16,7 +16,6 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
 
     # Main PnP SAGA routine
     z = np.copy(problem.Xinit)
-    zs = [z]
 
     denoiser.t = 0
 
@@ -67,9 +66,6 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
         if verbose:
             print(str(i) + " Before denoising:  " + str(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))))
 
-        # estimate sigma 
-        sigma_est = estimate_sigma(z, multichannel=True, average_sigmas=True)
-
         # Denoise
         z = denoiser.denoise(noisy=z, true_sigma=sigma_est)
 
@@ -79,8 +75,6 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
         
         # Update prev_stoch
         prev_stoch = grad_history[rand_ind]
-
-        zs.append(z)
 
         denoiser.t += 1
 
@@ -109,7 +103,6 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
         'z': z,
         'time_per_iter': time_per_iter,
         'psnr_per_iter': psnr_per_iter,
-        'zs': zs,
         'gradient_time': gradient_time,
         'denoise_time': denoise_time
     }
@@ -125,7 +118,6 @@ def tune_pnp_saga(args, problem, denoiser, tt, hist_size=50, verbose=True, lr_de
 
     # Main PnP SAGA routine
     z = np.copy(problem.Xinit)
-    zs = [z]
 
     denoiser.t = 0
 
@@ -169,15 +161,13 @@ def tune_pnp_saga(args, problem, denoiser, tt, hist_size=50, verbose=True, lr_de
         grad_end_time = time.time() - grad_start_time
         gradient_time += grad_end_time
 
-        # start denoising timing
-        denoise_start_time = time.time()
-
         if verbose:
             print(str(i) + " Before denoising:  " + str(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))))
 
-        # estimate sigma 
-        # sigma_est = estimate_sigma(z, multichannel=True, average_sigmas=True)
 
+        # start denoising timing
+        denoise_start_time = time.time()
+        
         # Denoise
         z = denoiser.denoise(noisy=z, sigma_est=dstrength)
 
@@ -187,8 +177,6 @@ def tune_pnp_saga(args, problem, denoiser, tt, hist_size=50, verbose=True, lr_de
         
         # Update prev_stoch
         prev_stoch = grad_history[rand_ind]
-
-        zs.append(z)
 
         denoiser.t += 1
 
@@ -217,7 +205,6 @@ def tune_pnp_saga(args, problem, denoiser, tt, hist_size=50, verbose=True, lr_de
         'z': z,
         'time_per_iter': time_per_iter,
         'psnr_per_iter': psnr_per_iter,
-        'zs': zs,
         'gradient_time': gradient_time,
         'denoise_time': denoise_time
     }
