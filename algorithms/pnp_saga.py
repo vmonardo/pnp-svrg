@@ -104,7 +104,8 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
         'denoise_time': denoise_time
     }
 
-def tune_pnp_saga(args, problem, denoiser, tt, hist_size=50, verbose=True, lr_decay=1, converge_check=True, diverge_check=False):
+def tune_pnp_saga(args, problem, denoiser, tt, hist_size=50, lr_decay=1, verbose=False, converge_check=True, diverge_check=True):
+    from hyperopt import STATUS_OK
     eta, mini_batch_size, dstrength = args 
     denoiser.sigma_est = dstrength
     result = pnp_saga(  eta=eta, 

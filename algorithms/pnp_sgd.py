@@ -3,8 +3,6 @@
 import time
 import numpy as np
 from skimage.metrics import peak_signal_noise_ratio
-from skimage.restoration import estimate_sigma
-from hyperopt import STATUS_OK
 
 tol = 1e-5
 def pnp_sgd(problem, denoiser, eta, tt, mini_batch_size, verbose=True, lr_decay=1, converge_check=True, diverge_check=False):
@@ -84,7 +82,8 @@ def pnp_sgd(problem, denoiser, eta, tt, mini_batch_size, verbose=True, lr_decay=
     }
     # return z, time_per_iter, psnr_per_iter, zs, gradient_time, denoise_time
 
-def tune_pnp_sgd(args, problem, denoiser, tt, verbose=True, lr_decay=1, converge_check=True, diverge_check=False):
+def tune_pnp_sgd(args, problem, denoiser, tt, lr_decay=1, verbose=False, converge_check=True, diverge_check=True):
+    from hyperopt import STATUS_OK
     eta, mini_batch_size, dstrength = args
     denoiser.sigma_est = dstrength
     result = pnp_sgd(   eta=eta,

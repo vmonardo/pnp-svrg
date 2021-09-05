@@ -59,7 +59,7 @@ def pnp_gd(problem, denoiser, eta, tt, verbose=True, lr_decay=1, converge_check=
         # Log timing
         time_per_iter.append(grad_end_time + denoise_end_time)
 
-        psnr_per_iter.append(peak_signal_noise_ratio(problem.Xrec, z.reshape(problem.H,problem.W)))
+        psnr_per_iter.append(peak_signal_noise_ratio(problem.Xrec, z0))
 
         z = np.copy(z0).ravel()
 
@@ -85,7 +85,8 @@ def pnp_gd(problem, denoiser, eta, tt, verbose=True, lr_decay=1, converge_check=
         'denoise_time': denoise_time
     }
 
-def tune_pnp_gd(args, problem, denoiser, tt, verbose=True, lr_decay=1, converge_check=True, diverge_check=False):
+def tune_pnp_gd(args, problem, denoiser, tt, lr_decay=1, verbose=False, converge_check=True, diverge_check=True):
+    from hyperopt import STATUS_OK
     eta, dstrength = args
     denoiser.sigma_est = dstrength
     result = pnp_gd(    eta=eta,

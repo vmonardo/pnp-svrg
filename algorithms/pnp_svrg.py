@@ -3,8 +3,6 @@
 import time
 import numpy as np
 from skimage.metrics import peak_signal_noise_ratio
-from skimage.restoration import estimate_sigma
-from hyperopt import STATUS_OK
 
 tol = 1e-5
 
@@ -64,7 +62,7 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
             gradient_time += grad_end_time
 
             if verbose:
-                print(str(i) + str(j) + " Before denoising:  " + str(peak_signal_noise_ratio(problem.Xrec, z.reshape(problem.H,problem.W))))
+                print(str(i) + " " + str(j) + " Before denoising:  " + str(peak_signal_noise_ratio(problem.Xrec, z.reshape(problem.H,problem.W))))
 
             # start denoising timing
             denoise_start_time = time.time()
@@ -106,7 +104,8 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
     }
     # return z, time_per_iter, psnr_per_iter, zs, gradient_time, denoise_time
 
-def tune_pnp_svrg(args, problem, denoiser, tt, verbose=True, lr_decay=1, converge_check=True, diverge_check=False):
+def tune_pnp_svrg(args, problem, denoiser, tt, lr_decay=1, verbose=False, converge_check=True, diverge_check=True):
+    from hyperopt import STATUS_OK
     eta, mini_batch_size, T2, dstrength = args
     denoiser.sigma_est = dstrength
     result = pnp_svrg(  eta=eta,
