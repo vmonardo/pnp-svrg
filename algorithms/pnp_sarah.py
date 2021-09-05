@@ -2,9 +2,6 @@
 # coding=utf-8
 import time
 import numpy as np
-from skimage.metrics import peak_signal_noise_ratio
-from skimage.restoration import estimate_sigma
-from hyperopt import STATUS_OK
 
 tol = 1e-5
 def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_decay=1, converge_check=True, diverge_check=False):
@@ -15,9 +12,7 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
     denoise_time = 0
     
     # Main PnP-SVRG routine
-    z = np.copy(problem.Xinit).ravel()
-    
-    denoiser.t = 0
+    z = np.copy(problem.Xinit)
 
     i = 0
 
@@ -29,12 +24,12 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
         if break_out_flag:
             break
         # Initialize ``step 0'' points
-        w_previous = np.copy(z).ravel()
+        w_previous = np.copy(z)
 
         # start gradient timing
         grad_start_time = time.time()
 
-        v_previous = problem.grad_full(z).ravel()
+        v_previous = problem.grad_full(z)
         
         # General ``step 1'' point
         w_next = w_previous - eta*v_previous
@@ -55,7 +50,7 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
         denoise_time += denoise_end_time
 
         time_per_iter.append(grad_end_time + denoise_end_time)
-        psnr_per_iter.append(peak_signal_noise_ratio(problem.Xrec, w_next))
+        psnr_per_iter.append(problem.PSNR(w_next))
 
         w_next = w_next.ravel()
 
@@ -65,7 +60,7 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
                 break
             
             # start PSNR track
-            start_PSNR = peak_signal_noise_ratio(problem.Xrec, z.reshape(problem.H,problem.W))
+            start_PSNR = problem.PSNR(z)
 
             # start gradient timing
             grad_start_time = time.time()
@@ -75,14 +70,14 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
             v_next = (problem.grad_stoch(w_next, mini_batch).ravel() - problem.grad_stoch(w_previous, mini_batch).ravel()) / mini_batch_size + v_previous.ravel()
 
             # Gradient update
-            z -= (eta*lr_decay**denoiser.t)*v_next
+            z -= (eta*lr_decay**i)*v_next
 
             # end gradient timing
             grad_end_time = time.time() - grad_start_time
             gradient_time += grad_end_time
 
             if verbose:
-                print("After gradient update: " + str(i) + " " + str(j) + " " + str(peak_signal_noise_ratio(problem.Xrec, z.reshape(problem.H,problem.W))))
+                print("After gradient update: " + str(i) + " " + str(j) + " " + str(problem.PSNR(z)))
 
             # start denoising timing
             denoise_start_time = time.time()    
@@ -101,7 +96,7 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
             
             # stop timing
             time_per_iter.append(grad_end_time + denoise_end_time)
-            psnr_per_iter.append(peak_signal_noise_ratio(problem.Xrec, z0))
+            psnr_per_iter.append(problem.PSNR(z0))
 
             z = np.copy(z0).ravel() 
 

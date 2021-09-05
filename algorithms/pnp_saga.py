@@ -2,9 +2,6 @@
 # coding=utf-8
 import time
 import numpy as np
-from skimage.metrics import peak_signal_noise_ratio
-from skimage.restoration import estimate_sigma
-from hyperopt import STATUS_OK
 
 tol = 1e-5
 def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=True, lr_decay=1, converge_check=True, diverge_check=False):
@@ -16,9 +13,6 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
 
     # Main PnP SAGA routine
     z = np.copy(problem.Xinit)
-    z = z.ravel()
-
-    denoiser.t = 0
 
     i = 0
 
@@ -35,11 +29,11 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
     
     time_per_iter.append(time.time() - start_time)
     
-    psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H, problem.W), z.reshape(problem.H, problem.W)))
+    psnr_per_iter.append(problem.PSNR(z))
     
     while (time.time() - elapsed) < tt:
         # start PSNR track
-        start_PSNR = peak_signal_noise_ratio(problem.Xrec, z.reshape(problem.H,problem.W))
+        start_PSNR = problem.PSNR(z)
 
         # start gradient timing
         grad_start_time = time.time()
@@ -52,7 +46,7 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
         v = grad_history[rand_ind].ravel() - prev_stoch.ravel() + sum(grad_history).ravel() / hist_size
 
         # Gradient update
-        z -= (eta*lr_decay**denoiser.t)*v
+        z -= (eta*lr_decay**i)*v
 
         # end gradient timing
         grad_end_time = time.time() - grad_start_time
@@ -62,7 +56,7 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
         denoise_start_time = time.time()
 
         if verbose:
-            print(str(i) + " Before denoising:  " + str(peak_signal_noise_ratio(problem.Xrec, z.reshape(problem.H,problem.W))))
+            print(str(i) + " Before denoising:  " + str(problem.PSNR(z)))
 
         # Denoise
         z0 = np.copy(z).reshape(problem.H, problem.W)
@@ -78,7 +72,7 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
         # Log timing
         time_per_iter.append(grad_end_time + denoise_end_time)
 
-        psnr_per_iter.append(peak_signal_noise_ratio(problem.Xrec, z0))
+        psnr_per_iter.append(problem.PSNR(z0))
 
         z = np.copy(z0).ravel()
 

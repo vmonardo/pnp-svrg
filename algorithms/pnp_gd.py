@@ -2,9 +2,6 @@
 # coding=utf-8
 import time
 import numpy as np
-from skimage.metrics import peak_signal_noise_ratio
-from skimage.restoration import estimate_sigma
-from hyperopt import STATUS_OK
 
 tol = 1e-5
 def pnp_gd(problem, denoiser, eta, tt, verbose=True, lr_decay=1, converge_check=True, diverge_check=False):
@@ -17,15 +14,13 @@ def pnp_gd(problem, denoiser, eta, tt, verbose=True, lr_decay=1, converge_check=
     # Main PnP GD routine
     z = np.copy(problem.Xinit)
 
-    denoiser.t = 0
-
     i = 0
 
     elapsed = time.time()
 
     while (time.time() - elapsed) < tt:
         # start PSNR track
-        start_PSNR = peak_signal_noise_ratio(problem.Xrec, z.reshape(problem.H,problem.W))
+        start_PSNR = problem.PSNR(z)
 
         # start gradient timing
         grad_start_time = time.time()
@@ -34,32 +29,29 @@ def pnp_gd(problem, denoiser, eta, tt, verbose=True, lr_decay=1, converge_check=
         v = problem.grad_full(z)
 
         # Gradient update
-        z -= (eta*lr_decay**denoiser.t)*v
+        z -= (eta*lr_decay**i)*v
 
         # end gradient timing
         grad_end_time = time.time() - grad_start_time
         gradient_time += grad_end_time
 
         if verbose:
-            print(str(i) + " Before denoising:  " + str(peak_signal_noise_ratio(problem.Xrec, z.reshape(problem.H,problem.W))))
+            print(str(i) + " Before denoising:  " + str(problem.PSNR(z)))
 
         # start denoising timing
         denoise_start_time = time.time()
 
-        # create copy to denoise
+        # denoise
         z0 = np.copy(z).reshape(problem.H, problem.W)
-
-        # Denoise
         z0 = denoiser.denoise(noisy=z0)
         
         # end denoising timing
         denoise_end_time = time.time() - denoise_start_time
         denoise_time += denoise_end_time
 
-        # Log timing
+        # Logging
         time_per_iter.append(grad_end_time + denoise_end_time)
-
-        psnr_per_iter.append(peak_signal_noise_ratio(problem.Xrec, z0))
+        psnr_per_iter.append(problem.PSNR(z0))
 
         z = np.copy(z0).ravel()
 

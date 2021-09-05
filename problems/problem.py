@@ -2,6 +2,7 @@
 # coding=utf-8
 from PIL import Image
 import numpy as np
+from skimage.metrics import peak_signal_noise_ratio
 
 class Problem():
     def __init__(self, img_path, H, W):
@@ -28,6 +29,10 @@ class Problem():
     
     def get_item(self, key):
         return self.__dict__[key]
+
+    def PSNR(self, w):
+        # return PSNR w.r.t. ground truth image
+        return peak_signal_noise_ratio(self.Xrec, w.reshape(self.H, self.W))
 
     def select_mb(self, size):
         # Draw measurements uniformly at random for mini-batch stochastic gradient
