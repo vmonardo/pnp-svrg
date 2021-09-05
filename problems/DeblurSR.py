@@ -6,7 +6,7 @@ import pylops
 from PIL import Image
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
-from skimage.restoration import estimate_sigma, denoise_nl_means
+import time
 
 eps = 1e-10
 
@@ -135,21 +135,35 @@ class Deblur(Problem):
     
 # use this for debugging
 if __name__ == '__main__':
-    height = 64
-    width = 64
-    rescale = 50
-    noise_level = 0.01
+    height = 4
+    width = 4
+    rescale = 100
+    noise_level = 0.0
 
+    # Create "ideal" problem
     # p = Deblur(img_path='./data/Set12/01.png', kernel_path='./data/kernel.png', H=height, W=width, sigma=noise_level, scale_percent=rescale)
-    p = Deblur(img_path='./data/Set12/01.png', kernel="Minimal", H=height, W=width, sigma=noise_level, scale_percent=rescale)
+    p = Deblur(img_path='./data/Set12/01.png', kernel="Identity", H=height, W=width, sigma=noise_level, scale_percent=rescale)
     p.grad_full_check()
     p.grad_stoch_check()
 
+    p.Xinit = np.random.uniform(0.0, 1.0, p.N) # Try random initialization with the problem
+    import sys
+    sys.path.append('denoisers/')
+    from NLM import NLMDenoiser
+    denoiser = NLMDenoiser(sigma_est=0, patch_size=4, patch_distance=5)
+    sys.path.append('algorithms/')
+    from pnp_gd import pnp_gd
+    from pnp_sgd import pnp_sgd
+    from pnp_sarah import pnp_sarah
+    from pnp_saga import pnp_saga
+    from pnp_svrg import pnp_svrg
 
-    # check that fft_blur and fft_deblur are inverses
-    w1 = np.random.uniform(0.0, 1.0, p.N)
-    w2 = np.random.uniform(0.0, 1.0, p.N)
-
-    x = p.fft_blur(w1, w2)
-    y = p.fft_deblur(x, w2)
-    print(y, w1)
+    output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=.2, tt=1, verbose=True, converge_check=True, diverge_check=False)
+    time.sleep(1)
+    output_sgd = pnp_sgd(problem=p, denoiser=denoiser, eta=.1, tt=1, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=False)
+    time.sleep(1)
+    output_sarah = pnp_sarah(problem=p, denoiser=denoiser, eta=.1, tt=1, T2=8, mini_batch_size=2, verbose=True, converge_check=True, diverge_check=False)
+    time.sleep(1)
+    output_saga = pnp_saga(problem=p, denoiser=denoiser, eta=.1, tt=1, mini_batch_size=2, hist_size=4, verbose=True, converge_check=True, diverge_check=False)
+    time.sleep(1)
+    output_svrg = pnp_svrg(problem=p, denoiser=denoiser, eta=.2, tt=1, T2=8, mini_batch_size=2, verbose=True, converge_check=True, diverge_check=False)
