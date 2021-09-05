@@ -15,6 +15,9 @@ class Deblur(Problem):
                        kernel_path=None, kernel=None, sigma=0.0, scale_percent=50):
         super().__init__(img_path, H, W)
 
+        # Name the problem
+        self.pname = 'deblur'
+
         # User specified parameters
         self.sigma = sigma
         self.scale_percent = scale_percent

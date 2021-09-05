@@ -11,6 +11,9 @@ class PhaseRetrieval(Problem):
     def __init__(self, img_path=None, H=256, W=256, 
                        num_meas=-1, sigma=1.0):
         super().__init__(img_path, H, W)
+        
+        # Name the problem
+        self.pname = 'pr'
 
         # User specified parameters
         self.sigma = sigma

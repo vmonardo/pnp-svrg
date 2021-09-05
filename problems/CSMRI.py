@@ -12,6 +12,9 @@ class CSMRI(Problem):
                        sample_prob=0.5, sigma=1.0):
         super().__init__(img_path, H, W)
 
+        # Name the problem
+        self.pname = 'csmri'
+
         # User specified parameters
         self.sample_prob = sample_prob
         self.sigma = sigma

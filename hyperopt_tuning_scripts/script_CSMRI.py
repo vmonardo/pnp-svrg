@@ -1,6 +1,6 @@
 import numpy as np
 import csv
-from datetime import date, datetime
+from datetime import datetime
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from hyperopt.hp import quniform
 from hyperopt.pyll import scope

@@ -2,6 +2,7 @@
 # coding=utf-8
 from PIL import Image
 import numpy as np
+from numpy.lib.npyio import save
 from skimage.metrics import peak_signal_noise_ratio
 
 class Problem():
@@ -33,6 +34,45 @@ class Problem():
     def PSNR(self, w):
         # return PSNR w.r.t. ground truth image
         return peak_signal_noise_ratio(self.Xrec, w.reshape(self.H, self.W))
+
+    def display(self, color_map='gray', show_measurements=False, save_results=False, save_path='figures/'):
+        import matplotlib.pyplot as plt
+        if save_results:
+            from datetime import datetime
+            baseFileName = save_path + self.pname + '/' + datetime.now().strftime('-%y-%m-%d-%H-%M') + "/"
+
+        # Display original image
+        orig_fig, orig_ax = plt.figure(figsize=(3,3))
+        orig_ax.imshow(self.Xrec, cmap=color_map, vmin=0, vmax=1)
+        orig_ax.title.set_text('Original Image')
+        orig_ax.xticks([])
+        orig_ax.yticks([])
+        if save_results:
+            fileName = baseFileName + 'original.eps'
+            orig_fig.savefig(fileName, transparent = True, bbox_inches = 'tight', pad_inches = 0)
+        plt.show()
+
+        # Display initialization
+        init_fig, init_ax = plt.figure(figsize=(3,3))
+        init_ax.imshow(self.Xinit.reshape(self.H, self.W), cmap=color_map, vmin=0, vmax=1)
+        init_ax.title.set_text('Initialization')
+        init_ax.xticks([])
+        init_ax.yticks([])
+        if save_results:
+            fileName = baseFileName + 'initialization.eps'
+            init_fig.savefig(fileName, transparent = True, bbox_inches = 'tight', pad_inches = 0)
+        plt.show()
+
+        if show_measurements:
+            meas_fig, meas_ax = plt.figure(figsize=(3,3))
+            meas_ax.imshow(self.Y.reshape(self.lrH, self.lrW), cmap=color_map, vmin=0, vmax=1)
+            meas_ax.title.set_text('Measurements')
+            meas_ax.xticks([])
+            meas_ax.yticks([])
+            if save_results:
+                fileName = baseFileName + 'measurements.eps'
+                meas_fig.savefig(fileName, transparent = True, bbox_inches = 'tight', pad_inches = 0)
+            plt.show()
 
     def select_mb(self, size):
         # Draw measurements uniformly at random for mini-batch stochastic gradient
