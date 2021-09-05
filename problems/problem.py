@@ -36,6 +36,7 @@ class Problem():
         return peak_signal_noise_ratio(self.Xrec, w.reshape(self.H, self.W))
 
     def display(self, color_map='gray', show_measurements=False, save_results=False, save_dir='figures/'):
+        self.color_map = color_map
         import matplotlib.pyplot as plt
         if save_results:
             from datetime import datetime

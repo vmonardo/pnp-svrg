@@ -24,7 +24,7 @@ class CSMRI(Problem):
         y0 = self.forward_model(self.X)
         noises = np.random.normal(0, self.sigma, y0.shape)
         self.Y = y0 + np.multiply(self.mask, noises)
-        self.Xinit = np.absolute(np.fft.ifft2(self.Y))
+        self.Xinit = np.absolute(np.fft.ifft2(self.Y)).ravel()
 
         # maintaining consistency for debugging
         self.lrH, self.lrW = self.H, self.W   
