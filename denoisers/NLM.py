@@ -17,6 +17,7 @@ class NLMDenoiser(Denoise):
         self.patch = dict(patch_size=patch_size, patch_distance=patch_distance, multichannel=multichannel)
 
     def denoise(self, noisy, sigma_est=0):
+        self.t += 1
         if sigma_est > 0:
             return denoise_nl_means(noisy, h=sigma_est*self.decay**self.t, sigma=sigma_est*self.decay**self.t, fast_mode=self.fast_mode, **self.patch)
         else:

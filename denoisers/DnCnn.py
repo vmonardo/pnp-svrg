@@ -18,6 +18,7 @@ class CNNDenoiser(Denoise):
                             data=False, sigma=sigma_est, batch_size=20).net.to(device)
 
     def denoise(self, noisy):
+        self.t += 1
         return (noisy - (self.decay**self.t)*self.cnn(torch.Tensor(noisy)[None][None].to(self.device)).squeeze().detach().cpu().numpy())
 
 ### See cnn.py for more info

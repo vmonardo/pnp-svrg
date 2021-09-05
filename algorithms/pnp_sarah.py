@@ -55,7 +55,7 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
         denoise_time += denoise_end_time
 
         time_per_iter.append(grad_end_time + denoise_end_time)
-        psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), w_next))
+        psnr_per_iter.append(peak_signal_noise_ratio(problem.Xrec, w_next))
 
         w_next = w_next.ravel()
 
@@ -65,7 +65,7 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
                 break
             
             # start PSNR track
-            start_PSNR = peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))
+            start_PSNR = peak_signal_noise_ratio(problem.Xrec, z.reshape(problem.H,problem.W))
 
             # start gradient timing
             grad_start_time = time.time()
@@ -82,34 +82,31 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
             gradient_time += grad_end_time
 
             if verbose:
-                print("After gradient update: " + str(i) + " " + str(j) + " " + str(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))))
+                print("After gradient update: " + str(i) + " " + str(j) + " " + str(peak_signal_noise_ratio(problem.Xrec, z.reshape(problem.H,problem.W))))
 
             # start denoising timing
             denoise_start_time = time.time()    
 
             # Denoise
-            z = z.reshape(problem.H, problem.W)
-            z = denoiser.denoise(noisy=z)
+            z0 = np.copy(z).reshape(problem.H, problem.W)
+            z0 = denoiser.denoise(noisy=z0)
 
             # end denoising timing
             denoise_end_time = time.time() - denoise_start_time
             denoise_time += denoise_end_time
 
-            denoiser.t += 1
-
             # update recursion points
             v_previous = np.copy(v_next)
-            w_previous = np.copy(z.ravel()) 
+            w_previous = np.copy(z0).ravel() 
             
             # stop timing
             time_per_iter.append(grad_end_time + denoise_end_time)
-            psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z))
+            psnr_per_iter.append(peak_signal_noise_ratio(problem.Xrec, z0))
 
-            z = z.ravel()
+            z = np.copy(z0).ravel() 
 
             if verbose:
                 print("After denoising update: " + str(i) + " " + str(j) + " " + str(psnr_per_iter[-1]))
-                print()
 
             # Check convergence in terms of PSNR
             if converge_check is True and np.abs(start_PSNR - psnr_per_iter[-1]) < tol:

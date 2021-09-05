@@ -19,7 +19,8 @@ class Problem():
 
         # Normalize image such that all pixels are in rage [0,1]
         tmp = (tmp - np.min(tmp)) / (np.max(tmp) - np.min(tmp))
-        self.X = tmp.ravel()    # Pass image as np array of specified dimensions
+        self.Xrec = tmp         # As image
+        self.X = tmp.ravel()    # As vector
 
         # Initialize essential parameters
         # self.Y = np.empty(self.M)

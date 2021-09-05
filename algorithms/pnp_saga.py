@@ -39,7 +39,7 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
     
     while (time.time() - elapsed) < tt:
         # start PSNR track
-        start_PSNR = peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))
+        start_PSNR = peak_signal_noise_ratio(problem.Xrec, z.reshape(problem.H,problem.W))
 
         # start gradient timing
         grad_start_time = time.time()
@@ -50,6 +50,7 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
         grad_history[rand_ind] = problem.grad_stoch(z, mini_batch) / mini_batch_size
         
         v = grad_history[rand_ind].ravel() - prev_stoch.ravel() + sum(grad_history).ravel() / hist_size
+
         # Gradient update
         z -= (eta*lr_decay**denoiser.t)*v
 
@@ -61,7 +62,7 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
         denoise_start_time = time.time()
 
         if verbose:
-            print(str(i) + " Before denoising:  " + str(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))))
+            print(str(i) + " Before denoising:  " + str(peak_signal_noise_ratio(problem.Xrec, z.reshape(problem.H,problem.W))))
 
         # Denoise
         z0 = np.copy(z).reshape(problem.H, problem.W)
@@ -74,12 +75,10 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
         # Update prev_stoch
         prev_stoch = grad_history[rand_ind]
 
-        denoiser.t += 1
-
         # Log timing
         time_per_iter.append(grad_end_time + denoise_end_time)
 
-        psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z0))
+        psnr_per_iter.append(peak_signal_noise_ratio(problem.Xrec, z0))
 
         z = np.copy(z0).ravel()
 

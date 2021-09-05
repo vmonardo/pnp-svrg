@@ -12,6 +12,7 @@ class TVDenoiser(Denoise):
         self.rescale_sigma = rescale_sigma
 
     def denoise(self, noisy):
+        self.t += 1
         return denoise_wavelet(noisy, multichannel=self.multi, rescale_sigma=self.rescale_sigma)
 
 ### For documentation, see:

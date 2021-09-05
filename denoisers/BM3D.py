@@ -13,10 +13,12 @@ class BM3DDenoiser(Denoise):
         self.sigma_est = sigma_est
 
     def denoise(self, noisy, sigma_est=0):
+        self.t += 1
         if sigma_est > 0:
             return bm3d(noisy, sigma_est)
         else:
             return bm3d(noisy, self.sigma_est*self.decay**self.t)
+        
 
 ### For documentation, see:
 # https://webpages.tuni.fi/foi/GCF-BM3D/

@@ -39,7 +39,7 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
         w = np.copy(z) 
 
         time_per_iter.append(time.time() - start_time)
-        psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W)))
+        psnr_per_iter.append(peak_signal_noise_ratio(problem.Xrec, z.reshape(problem.H,problem.W)))
 
         # inner loop
         for j in range(T2): 
@@ -47,7 +47,7 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
                 break
 
             # start PSNR track
-            start_PSNR = peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))
+            start_PSNR = peak_signal_noise_ratio(problem.Xrec, z.reshape(problem.H,problem.W))
 
             # start gradient timing
             grad_start_time = time.time()
@@ -64,13 +64,10 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
             gradient_time += grad_end_time
 
             if verbose:
-                print(str(i) + str(j) + " Before denoising:  " + str(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))))
+                print(str(i) + str(j) + " Before denoising:  " + str(peak_signal_noise_ratio(problem.Xrec, z.reshape(problem.H,problem.W))))
 
             # start denoising timing
             denoise_start_time = time.time()
-
-            # estimate sigma 
-            # sigma_est = estimate_sigma(z, multichannel=True, average_sigmas=True)
 
             # Denoise
             z0 = np.copy(z).reshape(problem.H,problem.W)
@@ -80,11 +77,9 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
             denoise_end_time = time.time() - denoise_start_time
             denoise_time += denoise_end_time
 
-            denoiser.t += 1
-
             # Log timing
             time_per_iter.append(grad_end_time + denoise_end_time)
-            psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z0))
+            psnr_per_iter.append(peak_signal_noise_ratio(problem.Xrec, z0))
 
             z = np.copy(z0).ravel()
 
