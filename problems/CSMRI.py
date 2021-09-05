@@ -81,8 +81,8 @@ class CSMRI(Problem):
 
 # use this for debugging
 if __name__ == '__main__':
-    height = 4
-    width = 4
+    height = 32
+    width = 32
     noise_level = 0.0
 
     # create "ideal" problem
@@ -101,12 +101,13 @@ if __name__ == '__main__':
     from pnp_saga import pnp_saga
     from pnp_svrg import pnp_svrg
 
+    # run for a while with super small learning rate and let hyperopt script find correct parameters :)
     output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=.2, tt=.1, verbose=True, converge_check=True, diverge_check=False)
     time.sleep(1)
-    output_sgd = pnp_sgd(problem=p, denoiser=denoiser, eta=.1, tt=.1, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=False)
+    output_sgd = pnp_sgd(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=False)
     time.sleep(1)
-    output_sarah = pnp_sarah(problem=p, denoiser=denoiser, eta=.1, tt=.1, T2=8, mini_batch_size=2, verbose=True, converge_check=True, diverge_check=False)
+    output_sarah = pnp_sarah(problem=p, denoiser=denoiser, eta=.001, tt=10, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)
     time.sleep(1)
-    output_saga = pnp_saga(problem=p, denoiser=denoiser, eta=.1, tt=.1, mini_batch_size=2, hist_size=4, verbose=True, converge_check=True, diverge_check=False)
+    output_saga = pnp_saga(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=2, hist_size=16, verbose=True, converge_check=False, diverge_check=False)
     time.sleep(1)
-    output_svrg = pnp_svrg(problem=p, denoiser=denoiser, eta=.2, tt=.1, T2=8, mini_batch_size=2, verbose=True, converge_check=True, diverge_check=False)
+    output_svrg = pnp_svrg(problem=p, denoiser=denoiser, eta=.002, tt=10, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)

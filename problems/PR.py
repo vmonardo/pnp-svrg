@@ -5,6 +5,7 @@ from problem import Problem
 import numpy as np
 from numpy import linalg as la
 from scipy.linalg import eigh
+import time 
 
 class PhaseRetrieval(Problem):
     def __init__(self, img_path=None, H=256, W=256, 
@@ -66,19 +67,33 @@ class PhaseRetrieval(Problem):
 
 # use this for debugging
 if __name__ == '__main__':
-    height = 32
-    width = 32
+    height = 4
+    width = 4
     alpha = 20       # ratio measurements / dimensions
     noise_level = 0
 
     p = PhaseRetrieval(img_path='./data/Set12/01.png', H=height, W=width, num_meas = alpha*height*width, sigma=noise_level)
     # p.grad_full_check()
     # p.grad_stoch_check()
+    p.Xinit = np.random.uniform(0.0, 1.0, p.N) # Try random initialization with the problem
     import sys
     sys.path.append('denoisers/')
     from NLM import NLMDenoiser
     denoiser = NLMDenoiser(sigma_est=0, patch_size=4, patch_distance=5)
     sys.path.append('algorithms/')
+    from pnp_gd import pnp_gd
+    from pnp_sgd import pnp_sgd
+    from pnp_sarah import pnp_sarah
     from pnp_saga import pnp_saga
-    # output = pnp_sarah(problem=p, denoiser=denoiser, eta=.002, tt=10, T2=50, mini_batch_size=100, verbose=True)
-    output = pnp_saga(problem=p, denoiser=denoiser, eta=.002, tt=10, mini_batch_size=100, verbose=True)
+    from pnp_svrg import pnp_svrg
+
+    # run for a while with super small learning rate and let hyperopt script find correct parameters :)
+    output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=.2, tt=.1, verbose=True, converge_check=True, diverge_check=False)
+    time.sleep(1)
+    output_sgd = pnp_sgd(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=False)
+    time.sleep(1)
+    output_sarah = pnp_sarah(problem=p, denoiser=denoiser, eta=.001, tt=10, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)
+    time.sleep(1)
+    output_saga = pnp_saga(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=2, hist_size=4, verbose=True, converge_check=False, diverge_check=False)
+    time.sleep(1)
+    output_svrg = pnp_svrg(problem=p, denoiser=denoiser, eta=.002, tt=10, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)

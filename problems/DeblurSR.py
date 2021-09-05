@@ -68,16 +68,16 @@ class Deblur(Problem):
             # small blur
             self.B = np.zeros((self.H, self.W))
             self.B[0,0] = 1
-            self.B[40,50] = 1
-            self.B[41,50] = 1
-            self.B[42,50] = 1
+            self.B[self.H//2,self.H//2] = 1
+            self.B[self.H//2,self.H//3] = 1
+            self.B[self.H//2,self.H//4] = 1
             self.B /= 4
         elif self.kernel is not None:
             self.B = self.kernel
         else:
             raise Exception('Need to pass in blur kernel path or kernel')
         # storing everything as arrays for consistency
-        self.B = self.B.ravel()
+        self.B = self.B.ravel() / self.N
 
     def _generate_bop(self):
         # Create bilinear interpolation operator using Pylops
@@ -142,10 +142,11 @@ if __name__ == '__main__':
 
     # Create "ideal" problem
     # p = Deblur(img_path='./data/Set12/01.png', kernel_path='./data/kernel.png', H=height, W=width, sigma=noise_level, scale_percent=rescale)
-    p = Deblur(img_path='./data/Set12/01.png', kernel="Identity", H=height, W=width, sigma=noise_level, scale_percent=rescale)
+    p = Deblur(img_path='./data/Set12/01.png', kernel_path='./data/kernel.png', H=height, W=width, sigma=noise_level, scale_percent=rescale)
     p.grad_full_check()
     p.grad_stoch_check()
-
+    print(p.B)
+    time.sleep(1)
     p.Xinit = np.random.uniform(0.0, 1.0, p.N) # Try random initialization with the problem
     import sys
     sys.path.append('denoisers/')
@@ -158,12 +159,15 @@ if __name__ == '__main__':
     from pnp_saga import pnp_saga
     from pnp_svrg import pnp_svrg
 
-    output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=.2, tt=1, verbose=True, converge_check=True, diverge_check=False)
+    # run for a while with super small learning rate and let hyperopt script find correct parameters :)
+    output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=1, tt=20, verbose=True, converge_check=False, diverge_check=True)
     time.sleep(1)
-    output_sgd = pnp_sgd(problem=p, denoiser=denoiser, eta=.1, tt=1, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=False)
+    output_sgd = pnp_sgd(problem=p, denoiser=denoiser, eta=1, tt=20, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=True)
     time.sleep(1)
-    output_sarah = pnp_sarah(problem=p, denoiser=denoiser, eta=.1, tt=1, T2=8, mini_batch_size=2, verbose=True, converge_check=True, diverge_check=False)
+    output_sarah = pnp_sarah(problem=p, denoiser=denoiser, eta=1, tt=20, T2=8, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=True)
     time.sleep(1)
-    output_saga = pnp_saga(problem=p, denoiser=denoiser, eta=.1, tt=1, mini_batch_size=2, hist_size=4, verbose=True, converge_check=True, diverge_check=False)
+    output_saga = pnp_saga(problem=p, denoiser=denoiser, eta=1, tt=20, mini_batch_size=1, hist_size=16, verbose=True, converge_check=False, diverge_check=True)
     time.sleep(1)
-    output_svrg = pnp_svrg(problem=p, denoiser=denoiser, eta=.2, tt=1, T2=8, mini_batch_size=2, verbose=True, converge_check=True, diverge_check=False)
+    output_svrg = pnp_svrg(problem=p, denoiser=denoiser, eta=1, tt=20, T2=8, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=True)
+
+    print(output_gd['psnr_per_iter'][-1],output_gd['psnr_per_iter'][-1], output_sgd['psnr_per_iter'][-1], output_sarah['psnr_per_iter'][-1], output_saga['psnr_per_iter'][-1], output_svrg['psnr_per_iter'][-1])
