@@ -35,40 +35,43 @@ class Problem():
         # return PSNR w.r.t. ground truth image
         return peak_signal_noise_ratio(self.Xrec, w.reshape(self.H, self.W))
 
-    def display(self, color_map='gray', show_measurements=False, save_results=False, save_path='figures/'):
+    def display(self, color_map='gray', show_measurements=False, save_results=False, save_dir='figures/'):
         import matplotlib.pyplot as plt
         if save_results:
             from datetime import datetime
-            baseFileName = save_path + self.pname + '/' + datetime.now().strftime('-%y-%m-%d-%H-%M') + "/"
+            import os
+            baseFileName = save_dir + self.pname + '/' + datetime.now().strftime('%y-%m-%d-%H-%M') + "/"
+            self.prob_dir = baseFileName    # Set directory to say results
+            os.makedirs(baseFileName, exist_ok=True)
 
         # Display original image
-        orig_fig, orig_ax = plt.figure(figsize=(3,3))
-        orig_ax.imshow(self.Xrec, cmap=color_map, vmin=0, vmax=1)
-        orig_ax.title.set_text('Original Image')
-        orig_ax.xticks([])
-        orig_ax.yticks([])
+        orig_fig = plt.figure(figsize=(3,3))
+        plt.imshow(self.Xrec, cmap=color_map, vmin=0, vmax=1)
+        plt.title('Original Image')
+        plt.xticks([])
+        plt.yticks([])
         if save_results:
             fileName = baseFileName + 'original.eps'
             orig_fig.savefig(fileName, transparent = True, bbox_inches = 'tight', pad_inches = 0)
         plt.show()
 
         # Display initialization
-        init_fig, init_ax = plt.figure(figsize=(3,3))
-        init_ax.imshow(self.Xinit.reshape(self.H, self.W), cmap=color_map, vmin=0, vmax=1)
-        init_ax.title.set_text('Initialization')
-        init_ax.xticks([])
-        init_ax.yticks([])
+        init_fig = plt.figure(figsize=(3,3))
+        plt.imshow(self.Xinit.reshape(self.H, self.W), cmap=color_map, vmin=0, vmax=1)
+        plt.title('Initialization')
+        plt.xticks([])
+        plt.yticks([])
         if save_results:
             fileName = baseFileName + 'initialization.eps'
             init_fig.savefig(fileName, transparent = True, bbox_inches = 'tight', pad_inches = 0)
         plt.show()
 
         if show_measurements:
-            meas_fig, meas_ax = plt.figure(figsize=(3,3))
-            meas_ax.imshow(self.Y.reshape(self.lrH, self.lrW), cmap=color_map, vmin=0, vmax=1)
-            meas_ax.title.set_text('Measurements')
-            meas_ax.xticks([])
-            meas_ax.yticks([])
+            meas_fig = plt.figure(figsize=(3,3))
+            plt.imshow(self.Y.reshape(self.lrH, self.lrW), cmap=color_map, vmin=0, vmax=1)
+            plt.title('Measurements')
+            plt.xticks([])
+            plt.yticks([])
             if save_results:
                 fileName = baseFileName + 'measurements.eps'
                 meas_fig.savefig(fileName, transparent = True, bbox_inches = 'tight', pad_inches = 0)

@@ -121,9 +121,9 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
         'time_per_iter': time_per_iter,
         'psnr_per_iter': psnr_per_iter,
         'gradient_time': gradient_time,
-        'denoise_time': denoise_time
+        'denoise_time': denoise_time,
+        'algo_name': 'pnp_sarah'
     }
-
 def tune_pnp_sarah(args, problem, denoiser, tt, lr_decay=1, verbose=False, converge_check=True, diverge_check=True):
     from hyperopt import STATUS_OK
     eta, mini_batch_size, T2, dstrength = args
@@ -141,11 +141,12 @@ def tune_pnp_sarah(args, problem, denoiser, tt, lr_decay=1, verbose=False, conve
 
     # output denoised image, time stats, psnr stats
     return {
-        'loss': -result['psnr_per_iter'][-1],    # Look for hyperparameters that increase the positive change in PSNR
+        'loss': -result['psnr_per_iter'][-1],    # Look for hyperparameters that increase the positive change in PSNR 
         'status': STATUS_OK,
         'z': result['z'],
         'time_per_iter': result['time_per_iter'],
         'psnr_per_iter': result['psnr_per_iter'],
         'gradient_time': result['gradient_time'],
-        'denoise_time': result['denoise_time']
+        'denoise_time': result['denoise_time'],
+        'algo_name': result['algo_name']
     }

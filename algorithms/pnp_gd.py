@@ -74,7 +74,8 @@ def pnp_gd(problem, denoiser, eta, tt, verbose=True, lr_decay=1, converge_check=
         'time_per_iter': time_per_iter,
         'psnr_per_iter': psnr_per_iter,
         'gradient_time': gradient_time,
-        'denoise_time': denoise_time
+        'denoise_time': denoise_time,
+        'algo_name': 'pnp_gd'
     }
 
 def tune_pnp_gd(args, problem, denoiser, tt, lr_decay=1, verbose=False, converge_check=True, diverge_check=True):
@@ -92,11 +93,12 @@ def tune_pnp_gd(args, problem, denoiser, tt, lr_decay=1, verbose=False, converge
 
     # output denoised image, time stats, psnr stats
     return {
-        'loss': -result['psnr_per_iter'][-1],    # Look for hyperparameters that increase the positive change in PSNR
+        'loss': -result['psnr_per_iter'][-1],    # Look for hyperparameters that increase the positive change in PSNR 
         'status': STATUS_OK,
         'z': result['z'],
         'time_per_iter': result['time_per_iter'],
         'psnr_per_iter': result['psnr_per_iter'],
         'gradient_time': result['gradient_time'],
-        'denoise_time': result['denoise_time']
+        'denoise_time': result['denoise_time'],
+        'algo_name': result['algo_name']
     }

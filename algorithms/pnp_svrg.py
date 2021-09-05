@@ -95,7 +95,8 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
         'time_per_iter': time_per_iter,
         'psnr_per_iter': psnr_per_iter,
         'gradient_time': gradient_time,
-        'denoise_time': denoise_time
+        'denoise_time': denoise_time,
+        'algo_name': 'pnp_svrg'
     }
 
 def tune_pnp_svrg(args, problem, denoiser, tt, lr_decay=1, verbose=False, converge_check=True, diverge_check=True):
@@ -121,5 +122,6 @@ def tune_pnp_svrg(args, problem, denoiser, tt, lr_decay=1, verbose=False, conver
         'time_per_iter': result['time_per_iter'],
         'psnr_per_iter': result['psnr_per_iter'],
         'gradient_time': result['gradient_time'],
-        'denoise_time': result['denoise_time']
+        'denoise_time': result['denoise_time'],
+        'algo_name': result['algo_name']
     }
