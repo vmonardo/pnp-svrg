@@ -17,6 +17,7 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
     
     # Main PnP-SVRG routine
     z = np.copy(problem.Xinit)
+    z = z.ravel()
 
     denoiser.t = 0
 
@@ -56,8 +57,7 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
             v = (problem.grad_stoch(z, mini_batch) - problem.grad_stoch(w, mini_batch)) / mini_batch_size + mu
 
             # Gradient update
-            z = z.reshape(problem.H,problem.W)
-            z -= (eta*lr_decay**denoiser.t)*v.reshape(problem.H,problem.W)
+            z -= (eta*lr_decay**denoiser.t)*v
 
             # end gradient timing
             grad_end_time = time.time() - grad_start_time
@@ -73,7 +73,8 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
             # sigma_est = estimate_sigma(z, multichannel=True, average_sigmas=True)
 
             # Denoise
-            z = denoiser.denoise(noisy=z)
+            z0 = np.copy(z).reshape(problem.H,problem.W)
+            z0 = denoiser.denoise(noisy=z0)
             
             # end denoising timing
             denoise_end_time = time.time() - denoise_start_time
@@ -83,7 +84,9 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
 
             # Log timing
             time_per_iter.append(grad_end_time + denoise_end_time)
-            psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W)))
+            psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z0))
+
+            z = np.copy(z0).ravel()
 
             if verbose:
                 print("After denoising update: " + str(i) + " " + str(j) + " " + str(psnr_per_iter[-1]))

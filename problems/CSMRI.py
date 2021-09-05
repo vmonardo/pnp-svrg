@@ -5,6 +5,7 @@ from numpy.core.fromnumeric import reshape
 from problem import Problem
 import numpy as np
 import math
+import time
 
 class CSMRI(Problem):
     def __init__(self, img_path=None, H=256, W=256, 
@@ -80,10 +81,32 @@ class CSMRI(Problem):
 
 # use this for debugging
 if __name__ == '__main__':
-    height = 64
-    width = 64
-    noise_level = 0.01
+    height = 4
+    width = 4
+    noise_level = 0.0
 
-    p = CSMRI(img_path='./data/Set12/01.png', H=height, W=width, sample_prob=0.5, sigma=noise_level)
+    # create "ideal" problem
+    p = CSMRI(img_path='./data/Set12/01.png', H=height, W=width, sample_prob=1, sigma=noise_level)
     p.grad_full_check()
     p.grad_stoch_check()
+    p.Xinit = np.random.uniform(0.0, 1.0, p.N) # Try random initialization with the problem
+    import sys
+    sys.path.append('denoisers/')
+    from NLM import NLMDenoiser
+    denoiser = NLMDenoiser(sigma_est=0, patch_size=4, patch_distance=5)
+    sys.path.append('algorithms/')
+    from pnp_gd import pnp_gd
+    from pnp_sgd import pnp_sgd
+    from pnp_sarah import pnp_sarah
+    from pnp_saga import pnp_saga
+    from pnp_svrg import pnp_svrg
+
+    output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=.2, tt=.1, verbose=True, converge_check=True, diverge_check=False)
+    time.sleep(1)
+    output_sgd = pnp_sgd(problem=p, denoiser=denoiser, eta=.1, tt=.1, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=False)
+    time.sleep(1)
+    output_sarah = pnp_sarah(problem=p, denoiser=denoiser, eta=.1, tt=.1, T2=8, mini_batch_size=2, verbose=True, converge_check=True, diverge_check=False)
+    time.sleep(1)
+    output_saga = pnp_saga(problem=p, denoiser=denoiser, eta=.1, tt=.1, mini_batch_size=2, hist_size=4, verbose=True, converge_check=True, diverge_check=False)
+    time.sleep(1)
+    output_svrg = pnp_svrg(problem=p, denoiser=denoiser, eta=.2, tt=.1, T2=8, mini_batch_size=2, verbose=True, converge_check=True, diverge_check=False)

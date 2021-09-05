@@ -77,7 +77,7 @@ if __name__ == '__main__':
     import sys
     sys.path.append('denoisers/')
     from NLM import NLMDenoiser
-    denoiser = NLMDenoiser(filter_size=0, patch_size=4, patch_distance=5)
+    denoiser = NLMDenoiser(sigma_est=0, patch_size=4, patch_distance=5)
     sys.path.append('algorithms/')
     from pnp_saga import pnp_saga
     # output = pnp_sarah(problem=p, denoiser=denoiser, eta=.002, tt=10, T2=50, mini_batch_size=100, verbose=True)

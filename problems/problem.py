@@ -83,7 +83,7 @@ class Problem():
         for i in range(self.M):
             mb = np.zeros(self.M, dtype=int)
             mb[i] = 1
-            grad_comp += self.grad_stoch(w, mb).ravel()
+            grad_comp += self.grad_stoch(w, mb)
 
         if np.linalg.norm(full_grad.ravel() - grad_comp / self.M) > 1e-6:
             print('Stoch Grad check failed!')
