@@ -108,4 +108,3 @@ def tune_pnp_gd(args, problem, denoiser, tt, lr_decay=1, verbose=False, converge
         'gradient_time': result['gradient_time'],
         'denoise_time': result['denoise_time']
     }
-    # return z, time_per_iter, psnr_per_iter, zs, gradient_time, denoise_time

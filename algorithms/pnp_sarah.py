@@ -128,7 +128,6 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
         'gradient_time': gradient_time,
         'denoise_time': denoise_time
     }
-    # return z, time_per_iter, psnr_per_iter, zs, gradient_time, denoise_time
 
 def tune_pnp_sarah(args, problem, denoiser, tt, lr_decay=1, verbose=False, converge_check=True, diverge_check=True):
     from hyperopt import STATUS_OK
@@ -155,4 +154,3 @@ def tune_pnp_sarah(args, problem, denoiser, tt, lr_decay=1, verbose=False, conve
         'gradient_time': result['gradient_time'],
         'denoise_time': result['denoise_time']
     }
-    # return z, time_per_iter, psnr_per_iter, zs, gradient_time, denoise_time
