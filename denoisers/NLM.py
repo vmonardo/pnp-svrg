@@ -4,23 +4,23 @@ from denoiser import Denoise
 from skimage.restoration import denoise_nl_means
 
 class NLMDenoiser(Denoise):
-    def __init__(self, filter_decay=1,
-                       filter_size=0, patch_size=0, patch_distance=0, 
+    def __init__(self, decay=1,
+                       sigma_est=0, patch_size=0, patch_distance=0, 
                        sigma=0, fast_mode=True, multichannel=True):
         super().__init__()
 
         # Set user defined parameters
-        self.filter_decay = filter_decay
-        self.filter_size = filter_size
+        self.decay = decay
+        self.sigma_est = sigma_est
         self.fast_mode = fast_mode
         self.sigma = sigma                  # use if true sigma is provided
         self.patch = dict(patch_size=patch_size, patch_distance=patch_distance, multichannel=multichannel)
 
     def denoise(self, noisy, sigma_est=0):
         if sigma_est > 0:
-            return denoise_nl_means(noisy, h=sigma_est*self.filter_decay**self.t, sigma=sigma_est*self.filter_decay**self.t, fast_mode=self.fast_mode, **self.patch)
+            return denoise_nl_means(noisy, h=sigma_est*self.decay**self.t, sigma=sigma_est*self.decay**self.t, fast_mode=self.fast_mode, **self.patch)
         else:
-            return denoise_nl_means(noisy, h=self.filter_size*self.filter_decay**self.t, fast_mode=self.fast_mode, **self.patch)
+            return denoise_nl_means(noisy, h=self.sigma_est*self.decay**self.t, fast_mode=self.fast_mode, **self.patch)
 
 
 ### For documentation, see:
@@ -53,19 +53,19 @@ if __name__=='__main__':
                     multichannel=True)
 
     # slow algorithm
-    NLMslow = NLMDenoiser(filter_decay=1, filter_size=1.15 * sigma_est, patch_size=5, fast_mode=False, patch_distance=6)
+    NLMslow = NLMDenoiser(decay=1, sigma_est=1.15 * sigma_est, patch_size=5, fast_mode=False, patch_distance=6)
     denoise = NLMslow.denoise(noisy)
 
     # slow algorithm, sigma provided
-    NLMslowwithsigma = NLMDenoiser(filter_decay=1, filter_size=0.8 * sigma_est, sigma=sigma_est, patch_size=5, fast_mode=False, patch_distance=6)
+    NLMslowwithsigma = NLMDenoiser(decay=1, sigma_est=0.8 * sigma_est, sigma=sigma_est, patch_size=5, fast_mode=False, patch_distance=6)
     denoise2 = NLMslowwithsigma.denoise(noisy)
 
     # fast algorithm
-    NLMfast = NLMDenoiser(filter_decay=1, filter_size=0.8 * sigma_est, patch_size=5, fast_mode=True, patch_distance=6)
+    NLMfast = NLMDenoiser(decay=1, sigma_est=0.8 * sigma_est, patch_size=5, fast_mode=True, patch_distance=6)
     denoise_fast = NLMfast.denoise(noisy)
 
     # fast algorithm, sigma provided
-    NLMfastwithsigma = NLMDenoiser(filter_decay=1, filter_size=0.6 * sigma_est, sigma=sigma_est, patch_size=5, fast_mode=True, patch_distance=6)
+    NLMfastwithsigma = NLMDenoiser(decay=1, sigma_est=0.6 * sigma_est, sigma=sigma_est, patch_size=5, fast_mode=True, patch_distance=6)
     denoise2_fast = NLMfastwithsigma.denoise(noisy)
 
     fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(8, 6),

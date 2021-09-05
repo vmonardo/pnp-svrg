@@ -4,19 +4,19 @@ from denoiser import Denoise
 from bm3d import bm3d
 
 class BM3DDenoiser(Denoise):
-    def __init__(self, filter_decay=1,
-                       noise_est=0):
+    def __init__(self, decay=1,
+                       sigma_est=0):
         super().__init__()
 
         # Set user defined parameters
-        self.filter_decay = filter_decay
-        self.noise_est = noise_est
+        self.decay = decay
+        self.sigma_est = sigma_est
 
     def denoise(self, noisy, sigma_est=0):
         if sigma_est > 0:
             return bm3d(noisy, sigma_est)
         else:
-            return bm3d(noisy, self.noise_est*self.filter_decay**self.t)
+            return bm3d(noisy, self.sigma_est*self.decay**self.t)
 
 ### For documentation, see:
 # https://webpages.tuni.fi/foi/GCF-BM3D/
@@ -25,4 +25,4 @@ class BM3DDenoiser(Denoise):
 
 if __name__=='__main__':
     # Load an image, add noise, try denoising it
-    newDenoiser = BM3DDenoiser(filter_decay=1, noise_est=1.0)
+    newDenoiser = BM3DDenoiser(decay=1, sigma_est=1.0)

@@ -135,125 +135,26 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
 
 def tune_pnp_sarah(args, problem, denoiser, tt, verbose=True, lr_decay=1, converge_check=True, diverge_check=False):
     eta, mini_batch_size, T2, dstrength = args
-    # Initialize logging variables
-    time_per_iter = []
-    psnr_per_iter = []
-    gradient_time = 0
-    denoise_time = 0
-    
-    # Main PnP-SVRG routine
-    z = np.copy(problem.Xinit)
-
-    denoiser.t = 0
-
-    i = 0
-
-    elapsed = time.time()
-
-    # outer loop
-    break_out_flag = False
-    while (time.time() - elapsed) < tt:
-        if break_out_flag:
-            break
-        # Initialize ``step 0'' points
-        w_previous = np.copy(z) 
-
-        # start gradient timing
-        grad_start_time = time.time()
-
-        v_previous = problem.grad_full(z)
-        
-        # General ``step 1'' point
-        w_next = w_previous.reshape(problem.H,problem.W) - eta*v_previous.reshape(problem.H,problem.W)
-
-        # end gradient timing
-        grad_end_time = time.time() - grad_start_time
-        gradient_time += grad_end_time
-
-        # start denoising timing
-        denoise_start_time = time.time()
-
-        w_next = denoiser.denoise(noisy=w_next)
-
-        # end denoising timing
-        denoise_end_time = time.time() - denoise_start_time
-        denoise_time += denoise_end_time
-
-        time_per_iter.append(grad_end_time + denoise_end_time)
-        psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), w_next))
-
-        # inner loop
-        for j in range(T2): 
-            if (time.time() - elapsed) >= tt:
-                break
-            
-            # start PSNR track
-            start_PSNR = peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))
-
-            # start gradient timing
-            grad_start_time = time.time()
-
-            # calculate recursive stochastic variance-reduced gradient
-            mini_batch = problem.select_mb(mini_batch_size)
-            v_next = (problem.grad_stoch(w_next, mini_batch) - problem.grad_stoch(w_previous, mini_batch)) / mini_batch_size + v_previous
-
-            # Gradient update
-            z = z.reshape(problem.H,problem.W)
-            z -= (eta*lr_decay**denoiser.t)*v_next.reshape(problem.H,problem.W)
-
-            # end gradient timing
-            grad_end_time = time.time() - grad_start_time
-            gradient_time += grad_end_time
-
-            if verbose:
-                print("After gradient update: " + str(i) + " " + str(j) + " " + str(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W))))
-
-            # start denoising timing
-            denoise_start_time = time.time()    
-
-            # estimate sigma 
-            # sigma_est = estimate_sigma(z, multichannel=True, average_sigmas=True)
-
-            # Denoise
-            z = denoiser.denoise(noisy=z, sigma_est=dstrength)
-
-            # end denoising timing
-            denoise_end_time = time.time() - denoise_start_time
-            denoise_time += denoise_end_time
-
-            denoiser.t += 1
-
-            # update recursion points
-            v_previous = np.copy(v_next)
-            w_previous = np.copy(z) 
-            
-            # stop timing
-            time_per_iter.append(grad_end_time + denoise_end_time)
-            psnr_per_iter.append(peak_signal_noise_ratio(problem.X.reshape(problem.H,problem.W), z.reshape(problem.H,problem.W)))
-
-            if verbose:
-                print("After denoising update: " + str(i) + " " + str(j) + " " + str(psnr_per_iter[-1]))
-
-            # Check convergence in terms of PSNR
-            if converge_check is True and np.abs(start_PSNR - psnr_per_iter[-1]) < tol:
-                break_out_flag = True
-                break
-
-            # Check divergence of PSNR
-            if diverge_check is True and psnr_per_iter[-1] < 0:
-                break_out_flag = True
-                break
-        
-        i += 1
+    denoiser.sigma_est = dstrength
+    result = pnp_sarah( eta=eta,
+                        mini_batch_size=mini_batch_size,
+                        T2=T2,
+                        problem=problem,
+                        denoiser=denoiser,
+                        tt=tt,
+                        verbose=verbose,
+                        lr_decay=lr_decay,
+                        converge_check=converge_check,
+                        diverge_check=diverge_check )
 
     # output denoised image, time stats, psnr stats
     return {
-        'loss': -psnr_per_iter[-1],    # Look for hyperparameters that increase the positive change in PSNR
+        'loss': -result['psnr_per_iter'][-1],    # Look for hyperparameters that increase the positive change in PSNR
         'status': STATUS_OK,
-        'z': z,
-        'time_per_iter': time_per_iter,
-        'psnr_per_iter': psnr_per_iter,
-        'gradient_time': gradient_time,
-        'denoise_time': denoise_time
+        'z': result['z'],
+        'time_per_iter': result['time_per_iter'],
+        'psnr_per_iter': result['psnr_per_iter'],
+        'gradient_time': result['gradient_time'],
+        'denoise_time': result['denoise_time']
     }
     # return z, time_per_iter, psnr_per_iter, zs, gradient_time, denoise_time

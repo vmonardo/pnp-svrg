@@ -5,20 +5,20 @@ from cnn.cnn import Denoiser, DnCNN
 import torch
 
 class CNNDenoiser(Denoise):
-    def __init__(self, cnn_decay=1,
-                       cnn_sigma=40, device='cuda'):
+    def __init__(self, decay=1,
+                       sigma_est=40, device='cuda'):
         super().__init__()
 
         # Set user defined parameters
-        self.cnn_decay = cnn_decay
-        self.cnn_sigma = cnn_sigma
+        self.decay = decay
+        self.sigma_est = sigma_est
         self.device = device
 
-        self.cnn = Denoiser(net=DnCNN(17), experiment_name='exp_' + str(cnn_sigma), 
-                            data=False, sigma=cnn_sigma, batch_size=20).net.to(device)
+        self.cnn = Denoiser(net=DnCNN(17), experiment_name='exp_' + str(sigma_est), 
+                            data=False, sigma=sigma_est, batch_size=20).net.to(device)
 
     def denoise(self, noisy):
-        return (noisy - (self.cnn_decay**self.t)*self.cnn(torch.Tensor(noisy)[None][None].to(self.device)).squeeze().detach().cpu().numpy())
+        return (noisy - (self.decay**self.t)*self.cnn(torch.Tensor(noisy)[None][None].to(self.device)).squeeze().detach().cpu().numpy())
 
 ### See cnn.py for more info
 
