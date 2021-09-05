@@ -35,11 +35,8 @@ class Deblur(Problem):
         self._generate_bop()
         
         # Blur the image with blurring kernel
-        blurred = self.fft_blur(self.X, self.B)
-        self.blurred = blurred
-
         # create downsized, blurred image, as a vector
-        y0 = self.Bop * blurred
+        y0 = self.forward_model(self.X)
 
         # create noise
         noises = np.random.normal(0, self.sigma, y0.shape)
@@ -56,14 +53,8 @@ class Deblur(Problem):
                                                                  returninfo=False,
                                                                  **dict(maxiter=100))
 
-        # xhat = lsq_linear(self.Bop, self.Y, bounds=(np.zeros(self.N),np.ones(self.N)), lsmr_tol='auto', max_iter=100 )
-        # print(xhat)
         # Store initialization (as a vector)
-        tmp = np.clip(self.fft_deblur(xhat, self.B), 0, 1).reshape(self.H, self.W)
-        sigma_est = estimate_sigma(tmp, multichannel=True, average_sigmas=True)
-        patch = dict(patch_size=4, patch_distance=5, multichannel=True)
-        self.Xinit = denoise_nl_means(tmp, h=sigma_est, sigma=sigma_est, fast_mode=False, **patch).flatten()
-        # self.Xinit = (tmp - tmp.min())/(tmp.max() - tmp.min())
+        self.Xinit = self.fft_deblur(xhat, self.B)
 
     def _load_kernel(self):
         # Load the blurring kernel
@@ -85,6 +76,8 @@ class Deblur(Problem):
             self.B = self.kernel
         else:
             raise Exception('Need to pass in blur kernel path or kernel')
+        # storing everything as arrays for consistency
+        self.B = self.B.ravel()
 
     def _generate_bop(self):
         # Create bilinear interpolation operator using Pylops
@@ -98,7 +91,7 @@ class Deblur(Problem):
                                                                     # but result is transposed if not 
 
             # create downsizing linear operator 
-            iava = np.vstack([meshH.flatten(), meshW.flatten()])
+            iava = np.vstack([meshH.ravel(), meshW.ravel()])
             self.Bop = pylops.signalprocessing.Bilinear(iava, (self.H, self.W))
 
     def forward_model(self, w):
@@ -111,14 +104,14 @@ class Deblur(Problem):
         return np.linalg.norm(self.Y - self.forward_model(w)) ** 2 / 2 / self.M
 
     def fft_blur(self, M1, M2):
-        return np.real(np.fft.ifft( np.fft.fft(M1.flatten())*np.fft.fft(M2.flatten()) ))
+        return np.real(np.fft.ifft( np.fft.fft(M1.ravel())*np.fft.fft(M2.ravel()) ))
          
     def fft_deblur(self, M1, M2):
-        return np.real(np.fft.ifft( np.fft.fft(M1.flatten())/np.fft.fft(M2.flatten()) ))  
+        return np.real(np.fft.ifft( np.fft.fft(M1.ravel())/np.fft.fft(M2.ravel()) ))
 
     ## nab l(x) = B^T S^T (S B Z - y) / m
     def grad_full(self, z):
-        w = z.flatten()
+        w = z.ravel()
         W_blurred = self.fft_blur(w, self.B)
         W_down = self.Bop * W_blurred
         res = W_down - self.Y
@@ -127,13 +120,12 @@ class Deblur(Problem):
 
     ## nab l(x) = B^T S^T (S B Z - y) / m
     def grad_stoch(self, z, mb):
-        w = z.flatten()
-        mb = mb.flatten()
+        w = z.ravel()
+        mb = mb.ravel()
 
         # Get nonzero indices of the mini-batch
         index = np.nonzero(mb)
-        res = np.zeros(self.M)
-
+        res = np.zeros(self.M,)
         W_blurred = self.fft_blur(w, self.B)
         W_down = self.Bop * W_blurred
         res[index] = W_down[index] - self.Y[index]

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 
+from numpy.core.fromnumeric import reshape
 from problem import Problem
 import numpy as np
 import math
@@ -13,22 +14,13 @@ class CSMRI(Problem):
         # User specified parameters
         self.sample_prob = sample_prob
         self.sigma = sigma
-
-        self._generate_problem()
-
-    def _generate_problem(self):
-        # Problem Setup
         self._generate_mask()
         self._generate_F()
 
         y0 = self.forward_model(self.X)
-        noises = np.random.normal(0, self.sigma, (self.H, self.W))
-        y = y0.reshape(self.H, self.W) + np.multiply(self.mask, noises)
-        x_init = np.absolute(np.fft.ifft2(y))
-
-        # Save essential variables
-        self.Xinit = x_init.reshape(self.N)
-        self.Y = y.flatten()
+        noises = np.random.normal(0, self.sigma, y0.shape)
+        self.Y = y0 + np.multiply(self.mask, noises)
+        self.Xinit = np.absolute(np.fft.ifft2(self.Y))
 
         # maintaining consistency for debugging
         self.lrH, self.lrW = self.H, self.W   
@@ -50,8 +42,8 @@ class CSMRI(Problem):
         # return as a vector
         tmp = w.reshape(self.H, self.W)
         # ftmp = np.fft.fft2(tmp)
-        ftmp = self.F @ tmp @ self.F.T      
-        return np.multiply(self.mask, ftmp).reshape(self.N)
+        ftmp = self.F.dot(tmp).dot(self.F.T)      
+        return np.multiply(self.mask, ftmp)
 
     def f(self, w):
         # f(W) = || Y - M o F{W} ||_F^2 / 2*M
@@ -59,23 +51,17 @@ class CSMRI(Problem):
         return np.linalg.norm(self.Y - self.forward_model(w)) ** 2 / 2 / self.M
 
     def grad_full(self, z):
-        # Get objects as images
-        y = self.Y.reshape(self.H, self.W)
-        w = z.reshape(self.H, self.W)
-
         # initialize space for residual and compute it
-        res = np.zeros((self.H, self.W), dtype=complex)
-        res = (self.forward_model(w).reshape(self.H,self.W) - y)
+        res = np.zeros(z.shape, dtype=complex)
+        res = (self.forward_model(z) - self.Y)
 
         # return inverse 2D Fourier Transform of residual
         # tmp = np.real(np.fft.ifft2(res))
-        tmp = np.real(np.conj(self.F) @ res @ np.conj(self.F.T)) 
-        return tmp / self.M
+        return np.real(np.conj(self.F).dot(res).dot(np.conj(self.F.T))).ravel() / self.M
 
     def grad_stoch(self, z, mb):
         # Get objects as images
-        y = self.Y.reshape(self.H, self.W)
-        w = z.reshape(self.H, self.W)
+        w = z.reshape(self.H,self.W)
         mb = np.multiply(mb.reshape(self.H, self.W), self.mask)
 
         # Get nonzero indices of the mini-batch
@@ -86,12 +72,11 @@ class CSMRI(Problem):
         F_j = self.F[index[1],:]
 
         # compute residual
-        res = ((F_i @ w * F_j).sum(-1) - y[index])  # get residual in as a column vector
+        res = ((F_i @ w * F_j).sum(-1) - self.Y[index])  # get residual in as a column vector
         tmp = np.einsum('ij,i->ij',np.conj(F_i),res)
 
         # return inverse 2D Fourier Transform of residual
-        op = np.real(np.einsum('ij,ik->jk',tmp,np.conj(F_j)))
-        return op
+        return np.real(np.einsum('ij,ik->jk',tmp,np.conj(F_j))).ravel()
 
 # use this for debugging
 if __name__ == '__main__':

@@ -17,7 +17,7 @@ class PhaseRetrieval(Problem):
 
         # problem setup
         self.A = np.random.randn(self.M,self.N)
-        self.Y = self.forward_model(self.X)
+        self.Y = self.forward_model(self.X).ravel()
 
         # create noise
         # noises = np.random.normal(0, self.sigma, tmp.shape)
@@ -62,10 +62,7 @@ class PhaseRetrieval(Problem):
         A_gamma = self.A[index]
         tmp = A_gamma.dot(w).ravel()
         Weight = np.divide((np.absolute(tmp)  - self.Y[index]),np.absolute(tmp))
-        return np.conj(A_gamma).T.dot(Weight * tmp).ravel()
-
-    def NMSE(self, z):
-        return np.linalg.norm(self.X*self.X.T - z*z.T) / np.linalg.norm(self.X*self.X.T)
+        return (np.conj(A_gamma).T.dot(Weight * tmp)).ravel()
 
 # use this for debugging
 if __name__ == '__main__':

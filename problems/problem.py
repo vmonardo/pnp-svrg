@@ -61,7 +61,7 @@ class Problem():
             grad[i] = (self.f(w+delta) -  self.f(w)) / eps   
             delta[i] = 0
 
-        grad_comp = self.grad_full(w).flatten()
+        grad_comp = self.grad_full(w).ravel()
         print('grad: ', grad)
         print('grad_comp: ', grad_comp)
         if np.linalg.norm(grad - grad_comp) > 1e-4:
@@ -83,9 +83,9 @@ class Problem():
         for i in range(self.M):
             mb = np.zeros(self.M, dtype=int)
             mb[i] = 1
-            grad_comp += self.grad_stoch(w, mb).flatten()
+            grad_comp += self.grad_stoch(w, mb).ravel()
 
-        if np.linalg.norm(full_grad.flatten() - grad_comp / self.M) > 1e-6:
+        if np.linalg.norm(full_grad.ravel() - grad_comp / self.M) > 1e-6:
             print('Stoch Grad check failed!')
             print('full grad: ', full_grad)
             print('grad comp: ', grad_comp)
