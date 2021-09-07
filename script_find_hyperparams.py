@@ -100,15 +100,14 @@ def get_proxy_pspace(main_problem, algo_name, denoiser):
     else:
         raise Exception('Algorithm name "{0}" not found'.format(algo_name))    
 
-base_output_fn = 'hyperparam-tuning/'
-os.makedirs(base_output_fn, exist_ok=True)
+output_fn = 'hyperparam-tuning/' + datetime.now().strftime('-%y-%m-%d-%H-%M') + '.csv'
+os.makedirs(output_fn, exist_ok=True)
 
-for a in PROBLEM_LIST:
-    for b in ALGO_LIST:
-        for c in DENOISER_LIST:
-            output_fn = base_output_fn + a + '-' + b + '-' + c + datetime.now().strftime('-%y-%m-%d-%H-%M') + '.csv'
-            with open(output_fn, 'w') as csvfile:
-                writer = csv.writer(csvfile, delimiter=',')
+with open(output_fn, 'w') as csvfile:
+    writer = csv.writer(csvfile, delimiter=',')
+    for a in PROBLEM_LIST:
+        for b in ALGO_LIST:
+            for c in DENOISER_LIST:
                 writer.writerow([a,b,c])
 
                 p = get_problem(a)
