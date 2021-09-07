@@ -36,13 +36,10 @@ class Problem():
 
     def set_snr_sigma(self):
         if self.snr is not None and self.sigma is None:
-            print('snr is not none')
             self.sigma = self.get_sigma_from_snr()
         elif self.sigma is not None and self.snr is None:
-            print('sigma is not none')
             self.snr = self.get_snr_from_sigma()
         elif self.snr is None and self.sigma is None:
-            print('Assuming no noise.')
             self.sigma = 0
             self.snr = 10e9
         else: 
@@ -60,11 +57,9 @@ class Problem():
 
     def get_sigma_from_snr(self):
         # assume SNR is in dB, return sigma 
-        if self.snr > 0:
-            SNR = 10**(self.snr / 10)
-            return np.sqrt(np.linalg.norm(self.Y0.ravel()**2) / SNR )
-        else: 
-            raise Exception('Signal-to-noise ratio cannot be negative.') 
+        SNR = 10**(self.snr / 10)
+        return np.sqrt(np.linalg.norm(self.Y0.ravel()**2) / SNR )
+
 
     def display(self, color_map='gray', show_measurements=False, save_results=False, save_dir='figures/', show_figs=False):
         self.color_map = color_map

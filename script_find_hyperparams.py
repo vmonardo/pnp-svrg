@@ -43,7 +43,7 @@ def get_problem(prob_name, im_path, alpha, SNR):
         scale = int(alpha*100)
         return Deblur(img_path=im_path, kernel=KERNEL, H=256, W=256, scale_percent=scale, snr=SNR)
     if prob_name == 'PR':
-        return PhaseRetrieval(img_path=im_path, H=32, W=32, num_meas = alpha*32*32, snr=SNR)
+        return PhaseRetrieval(img_path=im_path, H=32, W=32, num_meas = int(alpha*32*32), snr=SNR)
     else:
         raise Exception('Problem name "{0}" not found'.format(prob_name)) 
 
@@ -104,9 +104,9 @@ def get_proxy_pspace(main_problem, algo_name, denoiser):
     else:
         raise Exception('Algorithm name "{0}" not found'.format(algo_name))    
 
-
-output_fn = 'hyperparam-tuning/' + datetime.now().strftime('-%y-%m-%d-%H-%M') + '.csv'
-os.makedirs(output_fn, exist_ok=True)
+os.makedirs('hyperparam-tuning/', exist_ok=True)
+output_fn = 'hyperparam-tuning/' + 'Set12-AllAlgo-AllProblem-AllDenoisers' + datetime.now().strftime('%y-%m-%d-%H-%M') + '.csv'
+# os.makedirs(output_fn, exist_ok=True)
 
 with open(output_fn, 'w') as csvfile:
     writer = csv.writer(csvfile, delimiter=',')
