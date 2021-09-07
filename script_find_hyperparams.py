@@ -6,6 +6,7 @@ from hyperopt.pyll import scope
 from tqdm import tqdm
 from functools import *
 import os
+import glob
 import torch
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(device)
@@ -17,11 +18,12 @@ from denoisers import *
 PROBLEM_LIST = ['CSMRI', 'DeblurSR', 'PR']
 ALGO_LIST = ['pnp_gd', 'pnp_sgd', 'pnp_saga', 'pnp_sarah', 'pnp_svrg']
 DENOISER_LIST = ['NLM', 'CNN', 'BM3D', 'TV']
-SNR_LIST = [-10, -5, 0, 5, 10, 15, 20, 25, 30]
 
-SIGMA = 0.1
+SNR_LIST = [-10, -5, 0, 5, 10, 15, 20, 25, 30]
+ALPHA_LIST = [0.5, 1.0, 1.5]
+SET12_LIST = glob.glob('./data/Set12/*.png')
+
 KERNEL = "Minimal"
-ALPHA = 20
 IM_HEIGHT = 32
 IM_WIDTH = 32
 IM_PATH = './data/Set12/01.png'
@@ -34,13 +36,14 @@ mb_min, mb_max = 1, 100
 T2_min, T2_max = 1, 100
 dstr_min, dstr_max = 0, 2
 
-def get_problem(prob_name):
+def get_problem(prob_name, im_path, alpha, SNR):
     if prob_name == 'CSMRI':
-        return CSMRI(img_path=IM_PATH, H=IM_HEIGHT, W=IM_WIDTH, sample_prob=0.5, sigma=SIGMA)
+        return CSMRI(img_path=im_path, H=256, W=256, sample_prob=alpha, snr=SNR)
     if prob_name == 'DeblurSR':
-        return Deblur(img_path=IM_PATH, kernel=KERNEL, H=IM_HEIGHT, W=IM_WIDTH, sigma=SIGMA, scale_percent=50)
+        scale = int(alpha*100)
+        return Deblur(img_path=im_path, kernel=KERNEL, H=256, W=256, scale_percent=scale, snr=SNR)
     if prob_name == 'PR':
-        return PhaseRetrieval(img_path=IM_PATH, H=IM_HEIGHT, W=IM_WIDTH, num_meas = ALPHA*IM_HEIGHT*IM_WIDTH)
+        return PhaseRetrieval(img_path=im_path, H=32, W=32, num_meas = alpha*32*32, snr=SNR)
     else:
         raise Exception('Problem name "{0}" not found'.format(prob_name)) 
 
@@ -101,31 +104,42 @@ def get_proxy_pspace(main_problem, algo_name, denoiser):
     else:
         raise Exception('Algorithm name "{0}" not found'.format(algo_name))    
 
+
 output_fn = 'hyperparam-tuning/' + datetime.now().strftime('-%y-%m-%d-%H-%M') + '.csv'
 os.makedirs(output_fn, exist_ok=True)
 
 with open(output_fn, 'w') as csvfile:
     writer = csv.writer(csvfile, delimiter=',')
-    for a in PROBLEM_LIST:
-        for b in ALGO_LIST:
-            for c in DENOISER_LIST:
-                writer.writerow([a,b,c])
+    for img in SET12_LIST:
+        for snr in SNR_LIST:
+            for alp in ALPHA_LIST:
+                for a in PROBLEM_LIST:
+                    for b in ALGO_LIST:
+                        for c in DENOISER_LIST:
+                            writer.writerow(['img','snr','alpha','problem','algorithm','denoiser'])
+                            writer.writerow([img, snr, alp, a, b, c])
 
-                p = get_problem(a)
-                dnr = get_denoiser(c)
-                proxy, pspace = get_proxy_pspace(p, b, dnr)
+                            p = get_problem(a, img, alp, snr)
+                            dnr = get_denoiser(c)
+                            proxy, pspace = get_proxy_pspace(p, b, dnr)
 
-                pbar = tqdm(total=MAX_EVALS, desc="Hyperopt" + " " + a + " " + b + " " + c)
-                trials = Trials()
-                results = fmin(
-                    proxy,
-                    space=pspace,
-                    algo=tpe.suggest,
-                    trials=trials,
-                    max_evals=MAX_EVALS
-                )
-                pbar.close()
+                            pbar = tqdm(total=MAX_EVALS, desc="Hyperopt" + " " + a + " " + b + " " + c)
+                            trials = Trials()
+                            results = fmin(
+                                proxy,
+                                space=pspace,
+                                algo=tpe.suggest,
+                                trials=trials,
+                                max_evals=MAX_EVALS
+                            )
+                            pbar.close()
 
-                print(results)
+                            print(results)
+                            print(trials.best_trial['result']['loss'])
+
+                            writer.writerow(['loss: ', trials.best_trial['result']['loss']])
+
+                            for key in results:
+                                writer.writerow([key, results[key]])
 
                 

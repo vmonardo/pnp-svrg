@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # coding=utf-8
-from .problem import Problem
+try:
+    from .problem import Problem
+except:
+    from problem import Problem
 import numpy as np
 import pylops
 from PIL import Image
@@ -43,13 +46,14 @@ class Deblur(Problem):
         # create downsized, blurred image, as a vector
         self.Y0 = self.forward_model(self.X)
 
+        # Set noise details
+        self.set_snr_sigma()
+    
         # create noise
         noises = np.random.normal(0, self.sigma, self.Y0.shape)
 
         # add noise
         self.Y = self.Y0 + noises
-
-        self.SNR = self.get_snr_from_sigma
 
         # Initialize problem with least squares solution
         # solve using Pylops functionality
@@ -63,8 +67,7 @@ class Deblur(Problem):
         # Store initialization (as a vector)
         self.Xinit = self.fft_deblur(xhat, self.B)
 
-        # Set noise details
-        self.set_snr_sigma()
+        
 
     def _load_kernel(self):
         # Load the blurring kernel
@@ -145,6 +148,11 @@ class Deblur(Problem):
     
 # use this for debugging
 if __name__ == '__main__':
+    import sys
+    sys.path.append('../')
+    from denoisers import *
+    from algorithms import *
+
     height = 4
     width = 4
     rescale = 100
@@ -158,16 +166,8 @@ if __name__ == '__main__':
     print(p.B)
     time.sleep(1)
     p.Xinit = np.random.uniform(0.0, 1.0, p.N) # Try random initialization with the problem
-    import sys
-    sys.path.append('denoisers/')
-    from NLM import NLMDenoiser
+
     denoiser = NLMDenoiser(sigma_est=0, patch_size=4, patch_distance=5)
-    sys.path.append('algorithms/')
-    from pnp_gd import pnp_gd
-    from pnp_sgd import pnp_sgd
-    from pnp_sarah import pnp_sarah
-    from pnp_saga import pnp_saga
-    from pnp_svrg import pnp_svrg
 
     # run for a while with super small learning rate and let hyperopt script find correct parameters :)
     output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=1, tt=20, verbose=True, converge_check=False, diverge_check=True)

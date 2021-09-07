@@ -97,10 +97,10 @@ def tune_pnp_sgd(args, problem, denoiser, tt, lr_decay=1, verbose=False, converg
     return {
         'loss': -result['psnr_per_iter'][-1],    # Look for hyperparameters that increase the positive change in PSNR 
         'status': STATUS_OK,
-        'z': result['z'],
+        'algo_name': result['algo_name'],
+        # 'z': result['z'],
         'time_per_iter': result['time_per_iter'],
         'psnr_per_iter': result['psnr_per_iter'],
         'gradient_time': result['gradient_time'],
-        'denoise_time': result['denoise_time'],
-        'algo_name': result['algo_name']
+        'denoise_time': result['denoise_time']
     }

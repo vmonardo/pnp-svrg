@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # coding=utf-8
-# from .problem import Problem
-from problem import Problem
+try:
+    from .problem import Problem
+except:
+    from problem import Problem
 import numpy as np
 import math
 import time
@@ -23,14 +25,15 @@ class CSMRI(Problem):
         self._generate_F()
 
         self.Y0 = self.forward_model(self.X)
-        noises = np.random.normal(0, self.sigma, self.Y0.shape)
-        self.Y = self.Y0 + np.multiply(self.mask, noises)
-        self.SNR = self.get_snr_from_sigma
-        self.Xinit = np.absolute(np.fft.ifft2(self.Y)).ravel()
 
         # Set noise details
         self.set_snr_sigma()
 
+        noises = np.random.normal(0, self.sigma, self.Y0.shape)
+        self.Y = self.Y0 + np.multiply(self.mask, noises)
+        self.SNR = self.get_snr_from_sigma
+        self.Xinit = np.absolute(np.fft.ifft2(self.Y)).ravel()
+        
         # maintaining consistency for debugging
         self.lrH, self.lrW = self.H, self.W   
         self.M = self.N                         # dimensions of actual output signal  
@@ -89,6 +92,10 @@ class CSMRI(Problem):
 
 # use this for debugging
 if __name__ == '__main__':
+    # import sys
+    # from denoisers import *
+    # from algorithms import *
+
     height = 32
     width = 32
     noise_level = 0.0
@@ -99,10 +106,7 @@ if __name__ == '__main__':
     p.grad_stoch_check()
     p.Xinit = np.random.uniform(0.0, 1.0, p.N) # Try random initialization with the problem
     print(p.snr, p.sigma)
-    import sys
-    sys.path.append('../')
-    from denoisers import *
-    from algorithms import *
+
     # denoiser = NLMDenoiser(sigma_est=0, patch_size=4, patch_distance=5)
 
 

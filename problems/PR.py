@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # coding=utf-8
-from .problem import Problem
+try:
+    from .problem import Problem
+except:
+    from problem import Problem
 import numpy as np
 from numpy import linalg as la
 from scipy.linalg import eigh
@@ -23,6 +26,9 @@ class PhaseRetrieval(Problem):
         self.A = np.random.randn(self.M,self.N)
         self.Y0 = self.forward_model(self.X).ravel()
 
+        # Set noise details
+        self.set_snr_sigma()
+
         # create noise
         noises = np.random.normal(0, self.sigma, self.Y0.shape)
         self.Y = self.Y0 + noises
@@ -37,9 +43,6 @@ class PhaseRetrieval(Problem):
             self.Xinit = -tmp
         else:
             self.Xinit = tmp
-
-        # Set noise details
-        self.set_snr_sigma()
 
     def spec_init(self):
         # create data matrix
@@ -74,6 +77,11 @@ class PhaseRetrieval(Problem):
 
 # use this for debugging
 if __name__ == '__main__':
+    import sys
+    sys.path.append('../')
+    from denoisers import *
+    from algorithms import *
+
     height = 4
     width = 4
     alpha = 20       # ratio measurements / dimensions
@@ -83,16 +91,8 @@ if __name__ == '__main__':
     # p.grad_full_check()
     # p.grad_stoch_check()
     p.Xinit = np.random.uniform(0.0, 1.0, p.N) # Try random initialization with the problem
-    import sys
-    sys.path.append('denoisers/')
-    from NLM import NLMDenoiser
+
     denoiser = NLMDenoiser(sigma_est=0, patch_size=4, patch_distance=5)
-    sys.path.append('algorithms/')
-    from pnp_gd import pnp_gd
-    from pnp_sgd import pnp_sgd
-    from pnp_sarah import pnp_sarah
-    from pnp_saga import pnp_saga
-    from pnp_svrg import pnp_svrg
 
     # run for a while with super small learning rate and let hyperopt script find correct parameters :)
     output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=.2, tt=.1, verbose=True, converge_check=True, diverge_check=False)
