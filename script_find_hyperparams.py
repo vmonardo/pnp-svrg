@@ -28,10 +28,10 @@ IM_HEIGHT = 32
 IM_WIDTH = 32
 IM_PATH = './data/Set12/01.png'
 
-TIME_PER_TRIAL = 2
-MAX_EVALS = 2
+TIME_PER_TRIAL = 20
+MAX_EVALS = 100
 
-eta_min, eta_max = 0, .1
+eta_min, eta_max = 0, 100
 mb_min, mb_max = 1, 100
 T2_min, T2_max = 1, 100
 dstr_min, dstr_max = 0, 2
@@ -111,14 +111,17 @@ output_fn = 'hyperparam-tuning/' + 'Set12-AllAlgo-AllProblem-AllDenoisers' + dat
 with open(output_fn, 'w') as csvfile:
     writer = csv.writer(csvfile, delimiter=',')
     for img in SET12_LIST:
-        for snr in SNR_LIST:
-            for alp in ALPHA_LIST:
-                for a in PROBLEM_LIST:
-                    for b in ALGO_LIST:
-                        for c in DENOISER_LIST:
-                            writer.writerow(['img','snr','alpha','problem','algorithm','denoiser'])
-                            writer.writerow([img, snr, alp, a, b, c])
-
+        writer.writerow(['img: ', img])
+        for a in PROBLEM_LIST:
+            writer.writerow(['problem: ', a])
+            for c in DENOISER_LIST:
+                writer.writerow(['denoiser: ', c])
+                for b in ALGO_LIST:
+                    writer.writerow(['algo: ', b]) 
+                    for alp in ALPHA_LIST:
+                        writer.writerow(['alpha: ', alp])
+                        writer.writerow(['snr', 'output PSNR'])
+                        for snr in SNR_LIST:
                             p = get_problem(a, img, alp, snr)
                             dnr = get_denoiser(c)
                             proxy, pspace = get_proxy_pspace(p, b, dnr)
@@ -135,11 +138,10 @@ with open(output_fn, 'w') as csvfile:
                             pbar.close()
 
                             print(results)
-                            print(trials.best_trial['result']['loss'])
-
-                            writer.writerow(['loss: ', trials.best_trial['result']['loss']])
+                            print('snr: ', snr, 'loss: ', trials.best_trial['result']['loss'])
+                            writer.writerow([snr, trials.best_trial['result']['loss']])
 
                             for key in results:
-                                writer.writerow([key, results[key]])
+                                print(key, results[key])
 
                 
