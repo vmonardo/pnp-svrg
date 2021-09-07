@@ -194,7 +194,8 @@ class Denoiser():
         axes[1][0].legend(loc='upper right')
         axes[1][0].set(xlabel='Epoch', ylabel='Loss')
         
-        axes[1][1].plot([self.train_psnr[k] for k in range(self.epoch)], label='training psnr')
+        print(type(self.train_psnr[0]), type(self.epoch))
+        axes[1][1].plot([self.train_psnr[k].cpu() for k in range(self.epoch)], label='training psnr')
         axes[1][1].legend(loc='lower right')
         axes[1][1].set(xlabel='Epoch', ylabel='PSNR')
         

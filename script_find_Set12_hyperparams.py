@@ -15,23 +15,15 @@ from problems import *
 from algorithms import *
 from denoisers import *
 
-# PROBLEM_LIST = ['CSMRI', 'DeblurSR', 'PR']
-PROBLEM_LIST = ['CSMRI']
-# ALGO_LIST = ['pnp_gd', 'pnp_sgd', 'pnp_saga', 'pnp_sarah', 'pnp_svrg']
-ALGO_LIST = ['pnp_gd']
-# DENOISER_LIST = ['NLM', 'CNN', 'BM3D', 'TV']
-DENOISER_LIST = ['NLM']
+PROBLEM_LIST = ['CSMRI', 'DeblurSR', 'PR']
+ALGO_LIST = ['pnp_gd', 'pnp_sgd', 'pnp_saga', 'pnp_sarah', 'pnp_svrg']
+DENOISER_LIST = ['NLM', 'CNN', 'BM3D', 'TV']
 
-# SNR_LIST = [-10., -5., 0., 5., 10., 15., 20., 25., 30.]
-SNR_LIST = [0]
-# ALPHA_LIST = [1., 2., 3., 4., 5., 6., 7., 8., 9., 10.]
-ALPHA_LIST = [10.]
+SNR_LIST = [-10., -5., 0., 5., 10., 15., 20., 25., 30.]
+ALPHA_LIST = [1., 2., 3., 4., 5., 6., 7., 8., 9., 10.]
 SET12_LIST = glob.glob('./data/Set12/*.png')
 
 KERNEL = "Minimal"
-IM_HEIGHT = 32
-IM_WIDTH = 32
-IM_PATH = './data/Set12/01.png'
 
 TIME_PER_TRIAL = 1
 MAX_EVALS = 1
@@ -144,7 +136,7 @@ with open(output_fn, 'w') as csvfile:
 
                             print(results)
                             print('snr: ', snr, 'loss: ', trials.best_trial['result']['loss'])
-                            row_list = [snr, trials.best_trial['result']['loss']]
+                            row_list = [snr, trials.best_trial['result']['loss'], 'PARAMETERS:']
                             for key in results:
                                 row_list.append(key)
                                 row_list.append(results[key])

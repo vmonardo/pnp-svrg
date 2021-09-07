@@ -2,7 +2,7 @@
 # coding=utf-8
 try:
     from .denoiser import Denoise
-    from .cnn.cnn import Denoiser, DnCnn
+    from .cnn.cnn import Denoiser, DnCNN
 except:
     from denoiser import Denoise
     from cnn.cnn import Denoiser, DnCNN
@@ -35,7 +35,7 @@ if __name__=='__main__':
     from cnn.cnn import Denoiser, FlickrSet, DnCNN
     from cnn.spectral import spectral_norm
 
-    # print('cuda' if torch.cuda.is_available() else 'cpu')
+    print('cuda' if torch.cuda.is_available() else 'cpu')
 
     sigma = 40
     test_set = FlickrSet(mode='test', sigma=sigma, image_size=(40,40))
