@@ -35,7 +35,7 @@ class Problem():
         # return PSNR w.r.t. ground truth image
         return peak_signal_noise_ratio(self.Xrec, w.reshape(self.H, self.W))
 
-    def display(self, color_map='gray', show_measurements=False, save_results=False, save_dir='figures/'):
+    def display(self, color_map='gray', show_measurements=False, save_results=False, save_dir='figures/', show_figs=False):
         self.color_map = color_map
         import matplotlib.pyplot as plt
         if save_results:
@@ -54,7 +54,8 @@ class Problem():
         if save_results:
             fileName = baseFileName + 'original.eps'
             orig_fig.savefig(fileName, transparent = True, bbox_inches = 'tight', pad_inches = 0)
-        plt.show()
+        if show_figs:
+            plt.show()
 
         # Display initialization
         init_fig = plt.figure(figsize=(3,3))
@@ -65,7 +66,8 @@ class Problem():
         if save_results:
             fileName = baseFileName + 'initialization.eps'
             init_fig.savefig(fileName, transparent = True, bbox_inches = 'tight', pad_inches = 0)
-        plt.show()
+        if show_figs:
+            plt.show()
 
         if show_measurements:
             meas_fig = plt.figure(figsize=(3,3))
@@ -76,7 +78,8 @@ class Problem():
             if save_results:
                 fileName = baseFileName + 'measurements.eps'
                 meas_fig.savefig(fileName, transparent = True, bbox_inches = 'tight', pad_inches = 0)
-            plt.show()
+            if show_figs:
+                plt.show()
 
     def select_mb(self, size):
         # Draw measurements uniformly at random for mini-batch stochastic gradient
