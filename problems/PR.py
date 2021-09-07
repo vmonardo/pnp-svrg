@@ -8,22 +8,24 @@ import time
 
 class PhaseRetrieval(Problem):
     def __init__(self, img_path=None, H=256, W=256, 
-                       num_meas=-1, sigma=1.0):
-        super().__init__(img_path, H, W)
+                       num_meas=-1, snr=None, sigma=None):
+        super().__init__(img_path, H, W, snr=snr, sigma=sigma)
         
         # Name the problem
         self.pname = 'pr'
 
         # User specified parameters
-        self.sigma = sigma
         self.M = num_meas
 
         # problem setup
         self.A = np.random.randn(self.M,self.N)
-        self.Y = self.forward_model(self.X).ravel()
+        self.Y0 = self.forward_model(self.X).ravel()
 
         # create noise
-        # noises = np.random.normal(0, self.sigma, tmp.shape)
+        noises = np.random.normal(0, self.sigma, self.Y0.shape)
+        self.Y = self.Y0 + noises
+
+        self.SNR = self.get_snr_from_sigma
 
         # self.Y = tmp + noises
         tmp = self.spec_init()
@@ -31,10 +33,8 @@ class PhaseRetrieval(Problem):
         # Get sign of Xinit (solution is accurate up to a global phase shift)
         if tmp[tmp>0].shape[0] < tmp[tmp<0].shape[0]:
             self.Xinit = -tmp
-            # self.Xinit = (tmp - tmp.min())/(tmp.max() - tmp.min())
         else:
             self.Xinit = tmp
-            # self.Xinit = (tmp - tmp.min())/(tmp.max() - tmp.min())
 
     def spec_init(self):
         # create data matrix

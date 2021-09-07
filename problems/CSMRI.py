@@ -7,21 +7,22 @@ import time
 
 class CSMRI(Problem):
     def __init__(self, img_path=None, H=256, W=256, 
-                       sample_prob=0.5, sigma=1.0):
-        super().__init__(img_path, H, W)
+                       sample_prob=0.5, snr=None, sigma=None):
+        super().__init__(img_path, H, W, snr=snr, sigma=sigma)
 
         # Name the problem
         self.pname = 'csmri'
 
         # User specified parameters
         self.sample_prob = sample_prob
-        self.sigma = sigma
+        
         self._generate_mask()
         self._generate_F()
 
-        y0 = self.forward_model(self.X)
-        noises = np.random.normal(0, self.sigma, y0.shape)
-        self.Y = y0 + np.multiply(self.mask, noises)
+        self.Y0 = self.forward_model(self.X)
+        noises = np.random.normal(0, self.sigma, self.Y0.shape)
+        self.Y = self.Y0 + np.multiply(self.mask, noises)
+        self.SNR = self.get_snr_from_sigma
         self.Xinit = np.absolute(np.fft.ifft2(self.Y)).ravel()
 
         # maintaining consistency for debugging

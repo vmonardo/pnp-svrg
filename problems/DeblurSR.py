@@ -12,14 +12,14 @@ eps = 1e-10
 
 class Deblur(Problem):
     def __init__(self, img_path=None, H=64, W=64, 
-                       kernel_path=None, kernel=None, sigma=0.0, scale_percent=50):
-        super().__init__(img_path, H, W)
+                       kernel_path=None, kernel=None, scale_percent=50, 
+                       snr=None, sigma=None):
+        super().__init__(img_path, H, W, snr=snr, sigma=sigma)
 
         # Name the problem
         self.pname = 'deblur'
 
         # User specified parameters
-        self.sigma = sigma
         self.scale_percent = scale_percent
 
         # Identify kernel type
@@ -39,13 +39,15 @@ class Deblur(Problem):
         
         # Blur the image with blurring kernel
         # create downsized, blurred image, as a vector
-        y0 = self.forward_model(self.X)
+        self.Y0 = self.forward_model(self.X)
 
         # create noise
-        noises = np.random.normal(0, self.sigma, y0.shape)
+        noises = np.random.normal(0, self.sigma, self.Y0.shape)
 
         # add noise
-        self.Y = y0 + noises
+        self.Y = self.Y0 + noises
+
+        self.SNR = self.get_snr_from_sigma
 
         # Initialize problem with least squares solution
         # solve using Pylops functionality

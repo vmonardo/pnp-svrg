@@ -6,7 +6,7 @@ from numpy.lib.npyio import save
 from skimage.metrics import peak_signal_noise_ratio
 
 class Problem():
-    def __init__(self, img_path, H, W):
+    def __init__(self, img_path, H, W, snr=None, sigma=None):
         # User specified parameters
         self.H = H                  # Height of the image
         self.W = W                  # Width of the image
@@ -19,13 +19,24 @@ class Problem():
         else:
             raise Exception('Need to pass in image path or image')
 
+        if snr is not None and sigma is None:
+            self.snr = snr
+            self.sigma = self.get_sigma_from_snr
+        elif sigma is not None and snr is None:
+            self.sigma = sigma
+            self.snr = self.get_sigma_from_snr
+        elif snr is None and sigma is None:
+            self.sigma = 0
+            self.snr = 10e9
+        else: 
+            raise Exception('Please specify either sigma (sigma) or signal-to-noise ratio (snr)') 
+
         # Normalize image such that all pixels are in rage [0,1]
         tmp = (tmp - np.min(tmp)) / (np.max(tmp) - np.min(tmp))
         self.Xrec = tmp         # As image
         self.X = tmp.ravel()    # As vector
 
         # Initialize essential parameters
-        # self.Y = np.empty(self.M)
         self.Xinit = np.empty_like(self.X)
     
     def get_item(self, key):
@@ -34,6 +45,20 @@ class Problem():
     def PSNR(self, w):
         # return PSNR w.r.t. ground truth image
         return peak_signal_noise_ratio(self.Xrec, w.reshape(self.H, self.W))
+
+    def get_snr_from_sigma(self):
+        if self.sigma > 0:
+            return np.linalg.norm(self.Y0.ravel())**2 / self.sigma**2
+        elif self.sigma == 0:
+            return 10e9
+        else:
+            raise Exception('Sigma cannot be negative.') 
+
+    def get_sigma_from_snr(self):
+        if self.snr > 0:
+            return np.sqrt(np.linalg.norm(self.Y0.ravel()**2) / self.snr )
+        else: 
+            raise Exception('Signal-to-noise ratio cannot be negative.') 
 
     def display(self, color_map='gray', show_measurements=False, save_results=False, save_dir='figures/', show_figs=False):
         self.color_map = color_map
