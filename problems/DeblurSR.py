@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
-from problem import Problem
+from .problem import Problem
 import numpy as np
 import pylops
 from PIL import Image

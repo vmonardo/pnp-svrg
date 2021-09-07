@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 # coding=utf-8
-from denoisers import Denoise
-from cnn.cnn import Denoiser, DnCNN
+from .denoiser import Denoise
+from .cnn.cnn import Denoiser, DnCNN
+# from denoiser import Denoise
+# from cnn.cnn import Denoiser, DnCNN
 import torch
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 class CNNDenoiser(Denoise):
     def __init__(self, decay=1,
@@ -33,19 +36,19 @@ if __name__=='__main__':
     # print('cuda' if torch.cuda.is_available() else 'cpu')
 
     sigma = 40
-    # test_set = FlickrSet(mode='test', sigma=sigma, image_size=(40,40))
+    test_set = FlickrSet(mode='test', sigma=sigma, image_size=(40,40))
 
-    # # sample clean test image
-    # test_img = test_set[1]
+    # sample clean test image
+    test_img = test_set[1]
 
-    # # print("Norm difference:", torch.norm(test_img[0] - test_img[1]).item())
-    # print("PSNR:", 10*torch.log10(len(test_img[0].reshape(-1)) / torch.norm(test_img[0]-test_img[1])**2).item(), '\n\n')
-    # print("Noisy             |        Clean")
-    # show_multiple([test_img[0], test_img[1]])
+    # print("Norm difference:", torch.norm(test_img[0] - test_img[1]).item())
+    print("PSNR:", 10*torch.log10(len(test_img[0].reshape(-1)) / torch.norm(test_img[0]-test_img[1])**2).item(), '\n\n')
+    print("Noisy             |        Clean")
+    show_multiple([test_img[0], test_img[1]])
 
-    # fig, ax = plt.subplots()
-    # im = ax.imshow(test_img[2], cmap='gray')
-    # fig.colorbar(im, orientation='horizontal')
+    fig, ax = plt.subplots()
+    im = ax.imshow(test_img[2], cmap='gray')
+    fig.colorbar(im, orientation='horizontal')
     # plt.show()
 
     network_type = 'DnCNN'
@@ -57,9 +60,9 @@ if __name__=='__main__':
 
     #                     #train network 
 
-    # fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(7,6))
+    fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(7,6))
 
-    # denoiser.run(num_epochs=20, fig=fig, axes=axes, noisy_img=test_img[0])
+    denoiser.run(num_epochs=20, fig=fig, axes=axes, noisy_img=test_img[0])
 
     # evaluate performance on test set
 

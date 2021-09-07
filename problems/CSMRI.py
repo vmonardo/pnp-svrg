@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
-
-from numpy.core.fromnumeric import reshape
-from problem import Problem
+from .problem import Problem
 import numpy as np
 import math
 import time

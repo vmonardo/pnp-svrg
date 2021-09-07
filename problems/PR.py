@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
-from PIL.Image import ENCODERS
-from problem import Problem
+from .problem import Problem
 import numpy as np
 from numpy import linalg as la
 from scipy.linalg import eigh

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
-from denoisers import Denoise
+from .denoiser import Denoise
 from skimage.restoration import denoise_wavelet
 
 class TVDenoiser(Denoise):

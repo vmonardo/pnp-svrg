@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # coding=utf-8
-from denoiser import Denoise
+from .denoiser import Denoise
 from skimage.restoration import denoise_nl_means
 
 class NLMDenoiser(Denoise):
     def __init__(self, decay=1,
-                       sigma_est=0, patch_size=0, patch_distance=0, 
-                       sigma=0, fast_mode=True, multichannel=True):
+                       sigma_est=0, patch_size=4, patch_distance=5, 
+                       sigma=0, fast_mode=False, multichannel=True):
         super().__init__()
 
         # Set user defined parameters
@@ -18,7 +18,7 @@ class NLMDenoiser(Denoise):
 
     def denoise(self, noisy, sigma_est=0):
         self.t += 1
-        if sigma_est > 0:
+        if self.sigma > 0:
             return denoise_nl_means(noisy, h=sigma_est*self.decay**self.t, sigma=sigma_est*self.decay**self.t, fast_mode=self.fast_mode, **self.patch)
         else:
             return denoise_nl_means(noisy, h=self.sigma_est*self.decay**self.t, fast_mode=self.fast_mode, **self.patch)

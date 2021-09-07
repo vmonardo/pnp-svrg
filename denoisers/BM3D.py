@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
-from denoiser import Denoise
+from .denoiser import Denoise
 from bm3d import bm3d
 
 class BM3DDenoiser(Denoise):

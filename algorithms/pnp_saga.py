@@ -105,6 +105,7 @@ def tune_pnp_saga(args, problem, denoiser, tt, hist_size=50, lr_decay=1, verbose
     denoiser.sigma_est = dstrength
     result = pnp_saga(  eta=eta, 
                         mini_batch_size=mini_batch_size, 
+                        denoiser=denoiser,
                         problem=problem, 
                         tt=tt, 
                         hist_size=hist_size, 
