@@ -9,7 +9,7 @@ import os
 import glob
 import torch
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-print(device)
+# print(device)
 
 from problems import *
 from algorithms import *
@@ -20,7 +20,7 @@ ALGO_LIST = ['pnp_gd', 'pnp_sgd', 'pnp_saga', 'pnp_sarah', 'pnp_svrg']
 DENOISER_LIST = ['NLM', 'CNN', 'BM3D', 'TV']
 
 SNR_LIST = [-10, -5, 0, 5, 10, 15, 20, 25, 30]
-ALPHA_LIST = [0.5, 1.0, 1.5]
+ALPHA_LIST = [1., 2., 3., 4., 5., 6., 7., 8., 9., 10.]
 SET12_LIST = glob.glob('./data/Set12/*.png')
 
 KERNEL = "Minimal"
@@ -38,9 +38,9 @@ dstr_min, dstr_max = 0, 2
 
 def get_problem(prob_name, im_path, alpha, SNR):
     if prob_name == 'CSMRI':
-        return CSMRI(img_path=im_path, H=256, W=256, sample_prob=alpha, snr=SNR)
+        return CSMRI(img_path=im_path, H=256, W=256, sample_prob=alpha/10, snr=SNR)
     if prob_name == 'DeblurSR':
-        scale = int(alpha*100)
+        scale = int(alpha*10)
         return Deblur(img_path=im_path, kernel=KERNEL, H=256, W=256, scale_percent=scale, snr=SNR)
     if prob_name == 'PR':
         return PhaseRetrieval(img_path=im_path, H=32, W=32, num_meas = int(alpha*32*32), snr=SNR)
@@ -63,41 +63,41 @@ def get_proxy_pspace(main_problem, algo_name, denoiser):
     if algo_name == 'pnp_gd':
         proxy_fn = partial( tune_pnp_gd, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
         psp =   (
-                    hp.uniform('eta', 1e-5, 1),
+                    hp.uniform('eta', eta_min, eta_max),
                     hp.uniform('dstrength', dstr_min, dstr_max)
                 )
         return proxy_fn, psp
     if algo_name == 'pnp_sgd':
         proxy_fn = partial(tune_pnp_sgd, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
         psp =   (
-                    hp.uniform('eta', 1e-5, 1),
-                    scope.int(quniform('mini_batch_size', 1, 1000, q=1)),
+                    hp.uniform('eta', eta_min, eta_max),
+                    scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
                     hp.uniform('dstrength', dstr_min, dstr_max)
                 ) 
         return proxy_fn, psp
     if algo_name == 'pnp_saga':
         proxy_fn = partial(tune_pnp_saga, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
         psp =   (
-                    hp.uniform('eta', 1e-5, 1),
-                    scope.int(quniform('mini_batch_size', 1, 1000, q=1)),
+                    hp.uniform('eta', eta_min, eta_max),
+                    scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
                     hp.uniform('dstrength', dstr_min, dstr_max)
                 )
         return proxy_fn, psp
     if algo_name == 'pnp_sarah':
         proxy_fn = partial(tune_pnp_sarah, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
         psp =   (
-                    hp.uniform('eta', 1e-5, 1),
-                    scope.int(quniform('mini_batch_size', 1, 1000, q=1)),
-                    scope.int(quniform('T2', 1, 1000, q=1)),
+                    hp.uniform('eta', eta_min, eta_max),
+                    scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
+                    scope.int(quniform('T2', T2_min, T2_max, q=1)),
                     hp.uniform('dstrength', dstr_min, dstr_max)
                 )
         return proxy_fn, psp
     if algo_name == 'pnp_svrg':
         proxy_fn = partial(tune_pnp_svrg, problem=main_problem, denoiser=denoiser, tt=TIME_PER_TRIAL, verbose=False, lr_decay=1, converge_check=True, diverge_check=True)
         psp =   (
-                    hp.uniform('eta', 1e-5, 1),   
-                    scope.int(quniform('mini_batch_size', 1, 1000, q=1)),
-                    scope.int(quniform('T2', 1, 100, q=1)),
+                    hp.uniform('eta', eta_min, eta_max), 
+                    scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
+                    scope.int(quniform('T2', T2_min, T2_max, q=1)),
                     hp.uniform('dstrength', dstr_min, dstr_max)
                 )
         return proxy_fn, psp
@@ -123,7 +123,7 @@ with open(output_fn, 'w') as csvfile:
                             dnr = get_denoiser(c)
                             proxy, pspace = get_proxy_pspace(p, b, dnr)
 
-                            pbar = tqdm(total=MAX_EVALS, desc="Hyperopt" + " " + a + " " + b + " " + c)
+                            pbar = tqdm(total=MAX_EVALS, desc="Hyperopt" + " " + img + " " + str(snr) + " " + str(alp) + " " + a + " " + b + " " + c)
                             trials = Trials()
                             results = fmin(
                                 proxy,

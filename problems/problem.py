@@ -109,6 +109,8 @@ class Problem():
 
     def select_mb(self, size):
         # Draw measurements uniformly at random for mini-batch stochastic gradient
+        if size > self.M:
+            print('MB size is too big: ', size, ' > ', self.M)
         batch = np.zeros(self.M)
         batch_locs = np.random.choice(self.M, size, replace=False)
         batch[batch_locs] = 1
