@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
-from .problem import Problem
+# from .problem import Problem
+from problem import Problem
 import numpy as np
 import math
 import time
@@ -8,13 +9,15 @@ import time
 class CSMRI(Problem):
     def __init__(self, img_path=None, H=256, W=256, 
                        sample_prob=0.5, snr=None, sigma=None):
-        super().__init__(img_path, H, W, snr=snr, sigma=sigma)
+        super().__init__(img_path, H, W)
 
         # Name the problem
         self.pname = 'csmri'
 
         # User specified parameters
         self.sample_prob = sample_prob
+        self.snr = snr
+        self.sigma = sigma
         
         self._generate_mask()
         self._generate_F()
@@ -24,6 +27,9 @@ class CSMRI(Problem):
         self.Y = self.Y0 + np.multiply(self.mask, noises)
         self.SNR = self.get_snr_from_sigma
         self.Xinit = np.absolute(np.fft.ifft2(self.Y)).ravel()
+
+        # Set noise details
+        self.set_snr_sigma()
 
         # maintaining consistency for debugging
         self.lrH, self.lrW = self.H, self.W   
@@ -88,28 +94,25 @@ if __name__ == '__main__':
     noise_level = 0.0
 
     # create "ideal" problem
-    p = CSMRI(img_path='./data/Set12/01.png', H=height, W=width, sample_prob=1, sigma=noise_level)
+    p = CSMRI(img_path='./data/Set12/01.png', H=height, W=width, sample_prob=1, snr=10)
     p.grad_full_check()
     p.grad_stoch_check()
     p.Xinit = np.random.uniform(0.0, 1.0, p.N) # Try random initialization with the problem
+    print(p.snr, p.sigma)
     import sys
-    sys.path.append('denoisers/')
-    from NLM import NLMDenoiser
-    denoiser = NLMDenoiser(sigma_est=0, patch_size=4, patch_distance=5)
-    sys.path.append('algorithms/')
-    from pnp_gd import pnp_gd
-    from pnp_sgd import pnp_sgd
-    from pnp_sarah import pnp_sarah
-    from pnp_saga import pnp_saga
-    from pnp_svrg import pnp_svrg
+    sys.path.append('../')
+    from denoisers import *
+    from algorithms import *
+    # denoiser = NLMDenoiser(sigma_est=0, patch_size=4, patch_distance=5)
 
-    # run for a while with super small learning rate and let hyperopt script find correct parameters :)
-    output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=.2, tt=.1, verbose=True, converge_check=True, diverge_check=False)
-    time.sleep(1)
-    output_sgd = pnp_sgd(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=False)
-    time.sleep(1)
-    output_sarah = pnp_sarah(problem=p, denoiser=denoiser, eta=.001, tt=10, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)
-    time.sleep(1)
-    output_saga = pnp_saga(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=2, hist_size=16, verbose=True, converge_check=False, diverge_check=False)
-    time.sleep(1)
-    output_svrg = pnp_svrg(problem=p, denoiser=denoiser, eta=.002, tt=10, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)
+
+    # # run for a while with super small learning rate and let hyperopt script find correct parameters :)
+    # output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=.2, tt=.1, verbose=True, converge_check=True, diverge_check=False)
+    # time.sleep(1)
+    # output_sgd = pnp_sgd(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=False)
+    # time.sleep(1)
+    # output_sarah = pnp_sarah(problem=p, denoiser=denoiser, eta=.001, tt=10, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)
+    # time.sleep(1)
+    # output_saga = pnp_saga(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=2, hist_size=16, verbose=True, converge_check=False, diverge_check=False)
+    # time.sleep(1)
+    # output_svrg = pnp_svrg(problem=p, denoiser=denoiser, eta=.002, tt=10, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)

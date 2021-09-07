@@ -9,13 +9,15 @@ import time
 class PhaseRetrieval(Problem):
     def __init__(self, img_path=None, H=256, W=256, 
                        num_meas=-1, snr=None, sigma=None):
-        super().__init__(img_path, H, W, snr=snr, sigma=sigma)
+        super().__init__(img_path, H, W)
         
         # Name the problem
         self.pname = 'pr'
 
         # User specified parameters
         self.M = num_meas
+        self.snr = snr
+        self.sigma = sigma
 
         # problem setup
         self.A = np.random.randn(self.M,self.N)
@@ -35,6 +37,9 @@ class PhaseRetrieval(Problem):
             self.Xinit = -tmp
         else:
             self.Xinit = tmp
+
+        # Set noise details
+        self.set_snr_sigma()
 
     def spec_init(self):
         # create data matrix

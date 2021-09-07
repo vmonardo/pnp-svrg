@@ -14,13 +14,15 @@ class Deblur(Problem):
     def __init__(self, img_path=None, H=64, W=64, 
                        kernel_path=None, kernel=None, scale_percent=50, 
                        snr=None, sigma=None):
-        super().__init__(img_path, H, W, snr=snr, sigma=sigma)
+        super().__init__(img_path, H, W)
 
         # Name the problem
         self.pname = 'deblur'
 
         # User specified parameters
         self.scale_percent = scale_percent
+        self.snr = snr
+        self.sigma = sigma
 
         # Identify kernel type
         self.kernel_path = kernel_path
@@ -60,6 +62,9 @@ class Deblur(Problem):
 
         # Store initialization (as a vector)
         self.Xinit = self.fft_deblur(xhat, self.B)
+
+        # Set noise details
+        self.set_snr_sigma()
 
     def _load_kernel(self):
         # Load the blurring kernel

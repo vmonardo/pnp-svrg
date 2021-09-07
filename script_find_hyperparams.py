@@ -17,6 +17,7 @@ from denoisers import *
 PROBLEM_LIST = ['CSMRI', 'DeblurSR', 'PR']
 ALGO_LIST = ['pnp_gd', 'pnp_sgd', 'pnp_saga', 'pnp_sarah', 'pnp_svrg']
 DENOISER_LIST = ['NLM', 'CNN', 'BM3D', 'TV']
+SNR_LIST = [-10, -5, 0, 5, 10, 15, 20, 25, 30]
 
 SIGMA = 0.1
 KERNEL = "Minimal"

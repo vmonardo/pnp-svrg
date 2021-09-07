@@ -6,7 +6,7 @@ from numpy.lib.npyio import save
 from skimage.metrics import peak_signal_noise_ratio
 
 class Problem():
-    def __init__(self, img_path, H, W, snr=None, sigma=None):
+    def __init__(self, img_path, H, W):
         # User specified parameters
         self.H = H                  # Height of the image
         self.W = W                  # Width of the image
@@ -18,18 +18,6 @@ class Problem():
             tmp = np.array(Image.open(img_path).resize((H, W)))
         else:
             raise Exception('Need to pass in image path or image')
-
-        if snr is not None and sigma is None:
-            self.snr = snr
-            self.sigma = self.get_sigma_from_snr
-        elif sigma is not None and snr is None:
-            self.sigma = sigma
-            self.snr = self.get_sigma_from_snr
-        elif snr is None and sigma is None:
-            self.sigma = 0
-            self.snr = 10e9
-        else: 
-            raise Exception('Please specify either sigma (sigma) or signal-to-noise ratio (snr)') 
 
         # Normalize image such that all pixels are in rage [0,1]
         tmp = (tmp - np.min(tmp)) / (np.max(tmp) - np.min(tmp))
@@ -46,17 +34,35 @@ class Problem():
         # return PSNR w.r.t. ground truth image
         return peak_signal_noise_ratio(self.Xrec, w.reshape(self.H, self.W))
 
+    def set_snr_sigma(self):
+        if self.snr is not None and self.sigma is None:
+            print('snr is not none')
+            self.sigma = self.get_sigma_from_snr()
+        elif self.sigma is not None and self.snr is None:
+            print('sigma is not none')
+            self.snr = self.get_snr_from_sigma()
+        elif self.snr is None and self.sigma is None:
+            print('Assuming no noise.')
+            self.sigma = 0
+            self.snr = 10e9
+        else: 
+            raise Exception('Please specify either sigma (sigma) or signal-to-noise ratio (snr).')
+
     def get_snr_from_sigma(self):
+        # return SNR in dB from sigma 
         if self.sigma > 0:
-            return np.linalg.norm(self.Y0.ravel())**2 / self.sigma**2
+            SNR = np.linalg.norm(self.Y0.ravel())**2 / self.sigma**2
+            return 10*np.log10(SNR)
         elif self.sigma == 0:
             return 10e9
         else:
             raise Exception('Sigma cannot be negative.') 
 
     def get_sigma_from_snr(self):
+        # assume SNR is in dB, return sigma 
         if self.snr > 0:
-            return np.sqrt(np.linalg.norm(self.Y0.ravel()**2) / self.snr )
+            SNR = 10**(self.snr / 10)
+            return np.sqrt(np.linalg.norm(self.Y0.ravel()**2) / SNR )
         else: 
             raise Exception('Signal-to-noise ratio cannot be negative.') 
 
@@ -177,6 +183,6 @@ if __name__ == '__main__':
     width = 64
     noise_level = 0.01
 
-    p = Problem(img_path='./data/Set12/01.png', H=height, W=width)
+    p = Problem(img_path='./data/Set12/01.png', H=height, W=width, snr=5)
     x = p.select_mb(height*width)
     print(x, x.shape, p.N)
