@@ -23,7 +23,7 @@ class Problem():
         tmp = (tmp - np.min(tmp)) / (np.max(tmp) - np.min(tmp))
         self.Xrec = tmp         # As image
         self.X = tmp.ravel()    # As vector
-
+ 
         # Initialize essential parameters
         self.Xinit = np.empty_like(self.X)
     

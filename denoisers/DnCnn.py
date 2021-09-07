@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # coding=utf-8
-from .denoiser import Denoise
-from .cnn.cnn import Denoiser, DnCNN
-# from denoiser import Denoise
-# from cnn.cnn import Denoiser, DnCNN
+try:
+    from .denoiser import Denoise
+    from .cnn.cnn import Denoiser, DnCnn
+except:
+    from denoiser import Denoise
+    from cnn.cnn import Denoiser, DnCNN
 import torch
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
