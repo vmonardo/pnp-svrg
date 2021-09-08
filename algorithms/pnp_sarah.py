@@ -141,7 +141,7 @@ def tune_pnp_sarah(args, problem, denoiser, tt, lr_decay=1, verbose=False, conve
 
     # output denoised image, time stats, psnr stats
     return {
-        'loss': -result['psnr_per_iter'][-1],    # Look for hyperparameters that increase the positive change in PSNR 
+        'loss': -(result['psnr_per_iter'][-1] - result['psnr_per_iter'][0]),    # Look for hyperparameters that increase the positive change in PSNR 
         'status': STATUS_OK,
         'algo_name': result['algo_name'],
         'z': result['z'],

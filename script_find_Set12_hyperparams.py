@@ -107,7 +107,9 @@ output_fn = 'hyperparam-tuning/' + 'Set12-AllAlgo-AllProblem-AllDenoisers' + dat
 
 with open(output_fn, 'w') as csvfile:
     writer = csv.writer(csvfile, delimiter=',')
-    for img in SET12_LIST:
+    for i in range(len(SET12_LIST)):
+        img = SET12_LIST[i]
+    # for img in SET12_LIST:
         writer.writerow(['img: ', img])
         for a in PROBLEM_LIST:
             writer.writerow(['problem: ', a])
