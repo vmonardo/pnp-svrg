@@ -11,15 +11,20 @@ import torch
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 # print(device)
 
+from multiprocessing import Pool
+
 from problems import *
 from algorithms import *
 from denoisers import *
 
+# PROBLEM_LIST = ['CSMRI', 'DeblurSR']
+# ALGO_LIST = ['pnp_svrg', 'pnp_gd']
+# DENOISER_LIST = ['NLM', 'CNN']
 PROBLEM_LIST = ['CSMRI', 'DeblurSR', 'PR']
 ALGO_LIST = ['pnp_gd', 'pnp_sgd', 'pnp_saga', 'pnp_sarah', 'pnp_svrg']
-DENOISER_LIST = ['NLM', 'CNN', 'BM3D', 'TV']
+DENOISER_LIST = ['NLM', 'BM3D', 'TV']
 
-SNR_LIST = [-10., -5., 0., 5., 10., 15., 20., 25., 30.]
+SNR_LIST = [-5., 0., 5., 10., 15., 20., 25., 30., 35.]
 ALPHA_LIST = [1., 2., 3., 4., 5., 6., 7., 8., 9., 10.]
 SET12_LIST = glob.glob('./data/Set12/*.png')
 
@@ -101,50 +106,55 @@ def get_proxy_pspace(main_problem, algo_name, denoiser):
     else:
         raise Exception('Algorithm name "{0}" not found'.format(algo_name))    
 
-os.makedirs('hyperparam-tuning/', exist_ok=True)
-output_fn = 'hyperparam-tuning/' + 'Set12-AllAlgo-AllProblem-AllDenoisers' + datetime.now().strftime('%y-%m-%d-%H-%M') + '.csv'
-# os.makedirs(output_fn, exist_ok=True)
+def process_img(img):
+    # Parallelize code for each image
+    # img is a path to data
+    row_list = []
+    for a in PROBLEM_LIST:
+        for c in DENOISER_LIST:
+            for b in ALGO_LIST:
+                for alp in ALPHA_LIST:
+                    for snr in SNR_LIST:
+                        p = get_problem(a, img, alp, snr)
+                        dnr = get_denoiser(c)
+                        proxy, pspace = get_proxy_pspace(p, b, dnr)
 
-with open(output_fn, 'w') as csvfile:
-    writer = csv.writer(csvfile, delimiter=',')
-    for i in range(len(SET12_LIST)):
-        img = SET12_LIST[i]
-    # for img in SET12_LIST:
-        writer.writerow(['img: ', img])
-        for a in PROBLEM_LIST:
-            writer.writerow(['problem: ', a])
-            for c in DENOISER_LIST:
-                writer.writerow(['denoiser: ', c])
-                for b in ALGO_LIST:
-                    writer.writerow(['algo: ', b]) 
-                    for alp in ALPHA_LIST:
-                        writer.writerow(['alpha: ', alp])
-                        writer.writerow(['snr', 'output PSNR'])
-                        for snr in SNR_LIST:
-                            p = get_problem(a, img, alp, snr)
-                            dnr = get_denoiser(c)
-                            proxy, pspace = get_proxy_pspace(p, b, dnr)
+                        trials = Trials()
+                        results = fmin(
+                            proxy,
+                            space=pspace,
+                            algo=tpe.suggest,
+                            trials=trials,
+                            max_evals=MAX_EVALS
+                        )
 
-                            pbar = tqdm(total=MAX_EVALS, desc="Hyperopt" + " " + img + " " + str(snr) + " " + str(alp) + " " + a + " " + b + " " + c)
-                            trials = Trials()
-                            results = fmin(
-                                proxy,
-                                space=pspace,
-                                algo=tpe.suggest,
-                                trials=trials,
-                                max_evals=MAX_EVALS
-                            )
-                            pbar.close()
+                        row = [a, c, b, alp, snr, trials.best_trial['result']['loss'], 'PARAMETERS:']
+                        for key in results:
+                            row.append(key)
+                            row.append(results[key])
 
-                            print(results)
-                            print('snr: ', snr, 'loss: ', trials.best_trial['result']['loss'])
-                            row_list = [snr, trials.best_trial['result']['loss'], 'PARAMETERS:']
-                            for key in results:
-                                row_list.append(key)
-                                row_list.append(results[key])
-                                print(key, results[key])
+                        row_list.append(row)
+    return row_list
 
-                            writer.writerow(row_list)
+if __name__ == '__main__':
+    import time
+    os.makedirs('hyperparam-tuning/', exist_ok=True)
+    pool_obj = Pool(processes=len(SET12_LIST))
+    start = time.time()
+    result = pool_obj.map(process_img, SET12_LIST)
+    pool_obj.close()
+    pool_obj.join()
+    print("Done Processing!")
+    end = time.time()
+    print('total time (s)= ' + str(end-start))
 
-                
-print('Done!')
+    print(result)
+
+    output_fn = 'hyperparam-tuning/' + 'Set12-AllAlgo-AllProblem-AllDenoisers' + datetime.now().strftime('-%y-%m-%d-%H-%M') + '.csv' 
+    with open(output_fn,'w') as f:
+        writer = csv.writer(f, delimiter=',')
+        writer.writerow(['Results:'])
+        for item in result:
+            for row in item:
+                writer.writerow(row)
+    print("Done writing!")
