@@ -48,7 +48,7 @@ class Problem():
     def get_snr_from_sigma(self):
         # return SNR in dB from sigma 
         if self.sigma > 0:
-            SNR = np.linalg.norm(self.Y0.ravel())**2 / self.sigma**2
+            SNR = np.linalg.norm(self.Y0.ravel()) / self.sigma**2 / self.H / self.W
             return 10*np.log10(SNR)
         elif self.sigma == 0:
             return 10e9
@@ -58,7 +58,7 @@ class Problem():
     def get_sigma_from_snr(self):
         # assume SNR is in dB, return sigma 
         SNR = 10**(self.snr / 10)
-        return np.sqrt(np.linalg.norm(self.Y0.ravel()**2) / SNR )
+        return np.sqrt(np.linalg.norm(self.Y0.ravel()) / SNR / self.H / self.W )
 
 
     def display(self, color_map='gray', show_measurements=False, save_results=False, save_dir='figures/', show_figs=False):
