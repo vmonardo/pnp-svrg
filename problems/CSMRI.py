@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # coding=utf-8
+
 try:
     from .problem import Problem
 except:
     from problem import Problem
 import numpy as np
 import math
-import time
 
 class CSMRI(Problem):
     def __init__(self, img_path=None, H=256, W=256, 
@@ -92,9 +92,15 @@ class CSMRI(Problem):
 
 # use this for debugging
 if __name__ == '__main__':
-    # import sys
-    # from denoisers import *
-    # from algorithms import *
+    import sys
+    import os
+    cwd = os.getcwd()
+    print(cwd)
+
+    path = '.'
+
+    directory_contents = os.listdir(path)
+    print(directory_contents)
 
     height = 32
     width = 32
