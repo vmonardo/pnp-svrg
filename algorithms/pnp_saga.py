@@ -2,6 +2,7 @@
 # coding=utf-8
 import time
 import numpy as np
+from skimage.restoration import estimate_sigma
 
 tol = 1e-5
 def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=True, lr_decay=1, converge_check=True, diverge_check=False):
@@ -58,9 +59,10 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
         if verbose:
             print(str(i) + " Before denoising:  " + str(problem.PSNR(z)))
 
-        # Denoise
+        # denoise
         z0 = np.copy(z).reshape(problem.H, problem.W)
-        z0 = denoiser.denoise(noisy=z0)
+        sigma_est = estimate_sigma(z0, multichannel=True, average_sigmas=True)
+        z0 = denoiser.denoise(noisy=z0, sigma_est=sigma_est)
 
         # end denoising timing
         denoise_end_time = time.time() - denoise_start_time
