@@ -22,7 +22,7 @@ from denoisers import *
 #DENOISER_LIST = ['NLM', 'TV']
 #PROBLEM_LIST = ['CSMRI', 'DeblurSR', 'PR']
 PROBLEM_LIST = ['CSMRI']
-ALGO_LIST = ['pnp_gd', 'pnp_sgd', 'pnp_saga', 'pnp_sarah', 'pnp_svrg']
+ALGO_LIST = ['pnp_gd','pnp_sgd', 'pnp_saga', 'pnp_sarah', 'pnp_svrg']
 #DENOISER_LIST = ['NLM', 'BM3D', 'TV']
 DENOISER_LIST = ['BM3D']
 SNR_LIST = [20.]
@@ -32,10 +32,10 @@ SET12_LIST = glob.glob('./data/Set12/*.png')
 #SET12_LIST = ['./data/Set12/01.png']
 KERNEL = "Minimal"
 
-TIME_PER_TRIAL = 20 
-MAX_EVALS = 100
+TIME_PER_TRIAL = 30 
+MAX_EVALS = 10
 
-eta_min, eta_max = 0, 1
+eta_min, eta_max = 0, 10
 mb_min, mb_max = 1, 1000
 T2_min, T2_max = 1, 1000
 dstr_min, dstr_max = 0, 2
@@ -122,7 +122,6 @@ def process_img(img):
                         p = get_problem(a, img, alp, snr)
                         dnr = get_denoiser(c)
                         proxy, pspace = get_proxy_pspace(p, b, dnr)
-
                         trials = Trials()
                         results = fmin(
                             proxy,
@@ -131,7 +130,6 @@ def process_img(img):
                             trials=trials,
                             max_evals=MAX_EVALS
                         )
-
                         row = [a, c, b, alp, snr, trials.best_trial['result']['loss'], 'PARAMETERS:']
                         for key in results:
                             row.append(key)
