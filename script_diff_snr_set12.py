@@ -159,7 +159,7 @@ if __name__ == '__main__':
         writer = csv.writer(f, delimiter=',')
         writer.writerow(['Results:'])
         writer.writerow(['Problem','Denoiser','Algorithm','Alpha','SNR','Loss'])
-	for item in result:
-            for row in item:
-                writer.writerow(row)
+    for item in result:
+        for row in item:
+            writer.writerow(row)
     print("Done writing!")
