@@ -93,36 +93,32 @@ class CSMRI(Problem):
 # use this for debugging
 if __name__ == '__main__':
     import sys
-    import os
-    cwd = os.getcwd()
-    print(cwd)
-
-    path = '.'
-
-    directory_contents = os.listdir(path)
-    print(directory_contents)
+    sys.path.append('../')
+    from denoisers import *
+    from algorithms import *
+    import time
 
     height = 32
     width = 32
     noise_level = 0.0
 
     # create "ideal" problem
-    p = CSMRI(img_path='./data/Set12/01.png', H=height, W=width, sample_prob=1, snr=10)
+    p = CSMRI(img_path='../data/Set12/01.png', H=height, W=width, sample_prob=1, snr=10)
     p.grad_full_check()
     p.grad_stoch_check()
     p.Xinit = np.random.uniform(0.0, 1.0, p.N) # Try random initialization with the problem
     print(p.snr, p.sigma)
 
-    # denoiser = NLMDenoiser(sigma_est=0, patch_size=4, patch_distance=5)
+    denoiser = BM3DDenoiser()
 
 
-    # # run for a while with super small learning rate and let hyperopt script find correct parameters :)
-    # output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=.2, tt=.1, verbose=True, converge_check=True, diverge_check=False)
-    # time.sleep(1)
-    # output_sgd = pnp_sgd(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=False)
-    # time.sleep(1)
-    # output_sarah = pnp_sarah(problem=p, denoiser=denoiser, eta=.001, tt=10, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)
-    # time.sleep(1)
-    # output_saga = pnp_saga(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=2, hist_size=16, verbose=True, converge_check=False, diverge_check=False)
-    # time.sleep(1)
-    # output_svrg = pnp_svrg(problem=p, denoiser=denoiser, eta=.002, tt=10, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)
+    # run for a while with super small learning rate and let hyperopt script find correct parameters :)
+    output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=.2, tt=.1, verbose=True, converge_check=True, diverge_check=False)
+    time.sleep(1)
+    output_sgd = pnp_sgd(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=False)
+    time.sleep(1)
+    output_sarah = pnp_sarah(problem=p, denoiser=denoiser, eta=.001, tt=10, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)
+    time.sleep(1)
+    output_saga = pnp_saga(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=2, hist_size=16, verbose=True, converge_check=False, diverge_check=False)
+    time.sleep(1)
+    output_svrg = pnp_svrg(problem=p, denoiser=denoiser, eta=.002, tt=10, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)
