@@ -109,7 +109,7 @@ if __name__ == '__main__':
     p.Xinit = np.random.uniform(0.0, 1.0, p.N) # Try random initialization with the problem
     print(p.snr, p.sigma)
 
-    denoiser = BM3DDenoiser()
+    denoiser = BM3DDenoiser(sigma_modifier=1.0)
 
 
     # run for a while with super small learning rate and let hyperopt script find correct parameters :)

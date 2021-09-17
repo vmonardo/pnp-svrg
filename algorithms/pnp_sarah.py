@@ -33,7 +33,6 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
         grad_start_time = time.time()
 
         v_previous = problem.grad_full(z)
-        print(v_previous)
         
         # General ``step 1'' point
         w_next = w_previous - eta*v_previous
