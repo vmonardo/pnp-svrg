@@ -35,11 +35,11 @@ KERNEL = "Minimal"
 TIME_PER_TRIAL = 30 
 MAX_EVALS = 10
 
-eta_min, eta_max = 0, 10
-mb_min, mb_max = 1, 1000
-T2_min, T2_max = 1, 1000
-dstr_min, dstr_max = 0, 2
-hist_min, hist_max = 0, 100
+eta_min, eta_max = 1e-3, 1
+mb_min, mb_max = 10, 1000
+T2_min, T2_max = 10, 1000
+dstr_min, dstr_max = 0, 1 
+hist_min, hist_max = 50, 100
 
 def get_problem(prob_name, im_path, alpha, SNR):
     if prob_name == 'CSMRI':
@@ -86,7 +86,7 @@ def get_proxy_pspace(main_problem, algo_name, denoiser):
                     hp.uniform('eta', eta_min, eta_max),
                     scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
                     hp.uniform('dstrength', dstr_min, dstr_max),
-		    scope.int(quniform('hist_size', hist_min, hist_max))
+		    scope.int(quniform('hist_size', hist_min, hist_max, q=1))
                 )
         return proxy_fn, psp
     if algo_name == 'pnp_sarah':
