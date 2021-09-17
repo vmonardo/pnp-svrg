@@ -34,15 +34,15 @@ class PhaseRetrieval(Problem):
         self.Y = self.Y0 + noises
 
         self.SNR = self.get_snr_from_sigma
+        self.Xinit = np.random.uniform(0.0, 1.0, self.N) 
+        # # self.Y = tmp + noises
+        # tmp = self.spec_init()
 
-        # self.Y = tmp + noises
-        tmp = self.spec_init()
-
-        # Get sign of Xinit (solution is accurate up to a global phase shift)
-        if tmp[tmp>0].shape[0] < tmp[tmp<0].shape[0]:
-            self.Xinit = -tmp
-        else:
-            self.Xinit = tmp
+        # # Get sign of Xinit (solution is accurate up to a global phase shift)
+        # if tmp[tmp>0].shape[0] < tmp[tmp<0].shape[0]:
+        #     self.Xinit = -tmp
+        # else:
+        #     self.Xinit = tmp
 
     def spec_init(self):
         # create data matrix
@@ -82,22 +82,22 @@ if __name__ == '__main__':
     from denoisers import *
     from algorithms import *
 
-    height = 4
-    width = 4
-    alpha = 20       # ratio measurements / dimensions
+    height = 64
+    width = 64
+    alpha = 5       # ratio measurements / dimensions
     noise_level = 0
 
-    p = PhaseRetrieval(img_path='./data/Set12/01.png', H=height, W=width, num_meas = alpha*height*width, sigma=noise_level)
+    p = PhaseRetrieval(img_path='../data/Set12/01.png', H=height, W=width, num_meas = alpha*height*width, sigma=noise_level)
     # p.grad_full_check()
     # p.grad_stoch_check()
     p.Xinit = np.random.uniform(0.0, 1.0, p.N) # Try random initialization with the problem
 
-    denoiser = NLMDenoiser(sigma_est=0, patch_size=4, patch_distance=5)
+    denoiser = BM3DDenoiser()
 
     # run for a while with super small learning rate and let hyperopt script find correct parameters :)
     output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=.2, tt=.1, verbose=True, converge_check=True, diverge_check=False)
     time.sleep(1)
-    output_sgd = pnp_sgd(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=False)
+    output_sgd = pnp_sgd(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=100, verbose=True, converge_check=False, diverge_check=False)
     time.sleep(1)
     output_sarah = pnp_sarah(problem=p, denoiser=denoiser, eta=.001, tt=10, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)
     time.sleep(1)

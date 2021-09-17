@@ -54,18 +54,18 @@ class Deblur(Problem):
 
         # add noise
         self.Y = self.Y0 + noises
+        self.Xinit = np.random.uniform(0.0, 1.0, self.N) 
+        # # Initialize problem with least squares solution
+        # # solve using Pylops functionality
+        # D2op = pylops.Laplacian((self.H, self.W), weights=(1, 1), dtype='float64')
 
-        # Initialize problem with least squares solution
-        # solve using Pylops functionality
-        D2op = pylops.Laplacian((self.H, self.W), weights=(1, 1), dtype='float64')
+        # xhat = pylops.optimization.leastsquares.NormalEquationsInversion(self.Bop, [D2op], self.Y,
+        #                                                          epsRs=[np.sqrt(0.01)],
+        #                                                          returninfo=False,
+        #                                                          **dict(maxiter=100))
 
-        xhat = pylops.optimization.leastsquares.NormalEquationsInversion(self.Bop, [D2op], self.Y,
-                                                                 epsRs=[np.sqrt(0.01)],
-                                                                 returninfo=False,
-                                                                 **dict(maxiter=100))
-
-        # Store initialization (as a vector)
-        self.Xinit = self.fft_deblur(xhat, self.B)
+        # # Store initialization (as a vector)
+        # self.Xinit = self.fft_deblur(xhat, self.B)
 
         
 
@@ -117,7 +117,7 @@ class Deblur(Problem):
         return np.linalg.norm(self.Y - self.forward_model(w)) ** 2 / 2 / self.M
 
     def fft_blur(self, M1, M2):
-        return np.real(np.fft.ifft( np.fft.fft(M1.ravel())*np.fft.fft(M2.ravel()) ))
+        return np.real(np.fft.ifft( np.fft.fft(M1.ravel())*np.fft.fft(M2.ravel()) ))*np.sqrt(self.N)
          
     def fft_deblur(self, M1, M2):
         return np.real(np.fft.ifft( np.fft.fft(M1.ravel())/np.fft.fft(M2.ravel()) ))
@@ -153,31 +153,31 @@ if __name__ == '__main__':
     from denoisers import *
     from algorithms import *
 
-    height = 4
-    width = 4
-    rescale = 100
+    height = 256
+    width = 256
+    rescale = 50
     noise_level = 0.0
 
     # Create "ideal" problem
     # p = Deblur(img_path='./data/Set12/01.png', kernel_path='./data/kernel.png', H=height, W=width, sigma=noise_level, scale_percent=rescale)
-    p = Deblur(img_path='./data/Set12/01.png', kernel_path='./data/kernel.png', H=height, W=width, sigma=noise_level, scale_percent=rescale)
-    p.grad_full_check()
-    p.grad_stoch_check()
+    p = Deblur(img_path='../data/Set12/01.png', kernel_path='../data/kernel.png', H=height, W=width, sigma=noise_level, scale_percent=rescale)
+    # p.grad_full_check()
+    # p.grad_stoch_check()
     print(p.B)
     time.sleep(1)
     p.Xinit = np.random.uniform(0.0, 1.0, p.N) # Try random initialization with the problem
 
-    denoiser = NLMDenoiser(sigma_est=0, patch_size=4, patch_distance=5)
+    denoiser = BM3DDenoiser()
 
     # run for a while with super small learning rate and let hyperopt script find correct parameters :)
-    output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=1, tt=20, verbose=True, converge_check=False, diverge_check=True)
+    output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=1e-1, tt=20, verbose=True, converge_check=False, diverge_check=True)
     time.sleep(1)
-    output_sgd = pnp_sgd(problem=p, denoiser=denoiser, eta=1, tt=20, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=True)
+    output_sgd = pnp_sgd(problem=p, denoiser=denoiser, eta=1e-1, tt=20, mini_batch_size=100, verbose=True, converge_check=False, diverge_check=True)
     time.sleep(1)
-    output_sarah = pnp_sarah(problem=p, denoiser=denoiser, eta=1, tt=20, T2=8, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=True)
+    output_sarah = pnp_sarah(problem=p, denoiser=denoiser, eta=1e-1, tt=20, T2=8, mini_batch_size=100, verbose=True, converge_check=False, diverge_check=True)
     time.sleep(1)
-    output_saga = pnp_saga(problem=p, denoiser=denoiser, eta=1, tt=20, mini_batch_size=1, hist_size=16, verbose=True, converge_check=False, diverge_check=True)
+    output_saga = pnp_saga(problem=p, denoiser=denoiser, eta=1e-1, tt=20, mini_batch_size=100, hist_size=256, verbose=True, converge_check=False, diverge_check=True)
     time.sleep(1)
-    output_svrg = pnp_svrg(problem=p, denoiser=denoiser, eta=1, tt=20, T2=8, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=True)
+    output_svrg = pnp_svrg(problem=p, denoiser=denoiser, eta=1e-1, tt=20, T2=8, mini_batch_size=100, verbose=True, converge_check=False, diverge_check=True)
 
     print(output_gd['psnr_per_iter'][-1],output_gd['psnr_per_iter'][-1], output_sgd['psnr_per_iter'][-1], output_sarah['psnr_per_iter'][-1], output_saga['psnr_per_iter'][-1], output_svrg['psnr_per_iter'][-1])
