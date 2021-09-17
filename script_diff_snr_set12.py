@@ -27,18 +27,19 @@ ALGO_LIST = ['pnp_gd', 'pnp_sgd', 'pnp_saga', 'pnp_sarah', 'pnp_svrg']
 DENOISER_LIST = ['BM3D']
 SNR_LIST = [20.]
 #SNR_LIST = [0., 5., 10., 15., 20., 25., 30.]
-ALPHA_LIST = [6.]
+ALPHA_LIST = [7.]
 SET12_LIST = glob.glob('./data/Set12/*.png')
 #SET12_LIST = ['./data/Set12/01.png']
 KERNEL = "Minimal"
 
-TIME_PER_TRIAL = 60 
+TIME_PER_TRIAL = 20 
 MAX_EVALS = 100
 
 eta_min, eta_max = 0, 1
-mb_min, mb_max = 1, 100
-T2_min, T2_max = 1, 100
+mb_min, mb_max = 1, 1000
+T2_min, T2_max = 1, 1000
 dstr_min, dstr_max = 0, 2
+hist_min, hist_max = 0, 100
 
 def get_problem(prob_name, im_path, alpha, SNR):
     if prob_name == 'CSMRI':
@@ -84,7 +85,8 @@ def get_proxy_pspace(main_problem, algo_name, denoiser):
         psp =   (
                     hp.uniform('eta', eta_min, eta_max),
                     scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
-                    hp.uniform('dstrength', dstr_min, dstr_max)
+                    hp.uniform('dstrength', dstr_min, dstr_max),
+		    scope.int(quniform('hist_size', hist_min, hist_max))
                 )
         return proxy_fn, psp
     if algo_name == 'pnp_sarah':
@@ -156,7 +158,8 @@ if __name__ == '__main__':
     with open(output_fn,'w') as f:
         writer = csv.writer(f, delimiter=',')
         writer.writerow(['Results:'])
-        for item in result:
+        writer.writerow(['Problem','Denoiser','Algorithm','Alpha','SNR','Loss'])
+	for item in result:
             for row in item:
                 writer.writerow(row)
     print("Done writing!")
