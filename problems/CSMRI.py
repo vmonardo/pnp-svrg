@@ -33,6 +33,7 @@ class CSMRI(Problem):
         self.Y = self.Y0 + np.multiply(self.mask, noises)
         self.SNR = self.get_snr_from_sigma
         self.Xinit = np.absolute(np.fft.ifft2(self.Y)).ravel()
+        self.Xinit = (self.Xinit - np.min(self.Xinit)) / (np.max(self.Xinit) - np.min(self.Xinit))
         
         # maintaining consistency for debugging
         self.lrH, self.lrW = self.H, self.W   
