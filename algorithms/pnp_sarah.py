@@ -14,7 +14,6 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
     
     # Main PnP-SVRG routine
     z = np.copy(problem.Xinit)
-    print(z)
 
     i = 0
 
@@ -27,7 +26,6 @@ def pnp_sarah(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_
             break
         # Initialize ``step 0'' points
         w_previous = np.copy(z)
-        print(w_previous)
 
         # start gradient timing
         grad_start_time = time.time()
