@@ -7,18 +7,23 @@ except:
 from skimage.restoration import denoise_wavelet
 
 class TVDenoiser(Denoise):
-    def __init__(self, multi=True, rescale_sigma=True,
-                       sigma_est=0):
+    def __init__(self, multi=True, rescale_sigma=True, decay=1,
+                       denoise_strength=0, sigma_modifier=1):
         super().__init__()
 
         # Set user defined parameters
         self.multi = multi
         self.rescale_sigma = rescale_sigma
-        self.sigma_est = sigma_est
+        self.denoise_strength = denoise_strength
+        self.sigma_modifier = sigma_modifier
+        self.decay = decay
 
-    def denoise(self, noisy):
+    def denoise(self, noisy, sigma_est=0):
         self.t += 1
-        return denoise_wavelet(noisy, method='BayesShrink', sigma=self.sigma_est, multichannel=self.multi, rescale_sigma=self.rescale_sigma)
+        if sigma_est > 0:
+            return denoise_wavelet(noisy, method='BayesShrink', sigma=sigma_est*self.sigma_modifier, multichannel=self.multi, rescale_sigma=self.rescale_sigma)
+        else:
+            return denoise_wavelet(noisy, method='BayesShrink', sigma=self.denoise_strength*self.decay**self.t, multichannel=self.multi, rescale_sigma=self.rescale_sigma)
 
 ### For documentation, see:
 # https://scikit-image.org/docs/dev/api/skimage.restoration.html#skimage.restoration.denoise_wavelet

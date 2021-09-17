@@ -8,23 +8,23 @@ from skimage.restoration import denoise_nl_means
 
 class NLMDenoiser(Denoise):
     def __init__(self, decay=1,
-                       sigma_est=0, patch_size=4, patch_distance=5, 
-                       sigma=0, fast_mode=False, multichannel=True):
+                       denoise_strength=0, patch_size=4, patch_distance=5, 
+                       sigma_modifier=1, fast_mode=False, multichannel=True):
         super().__init__()
 
         # Set user defined parameters
         self.decay = decay
-        self.sigma_est = sigma_est
+        self.denoise_strength = denoise_strength
         self.fast_mode = fast_mode
-        self.sigma = sigma                  # use if true sigma is provided
+        self.sigma_modifier = sigma_modifier
         self.patch = dict(patch_size=patch_size, patch_distance=patch_distance, multichannel=multichannel)
 
     def denoise(self, noisy, sigma_est=0):
         self.t += 1
         if self.sigma > 0:
-            return denoise_nl_means(noisy, h=sigma_est*self.decay**self.t, sigma=sigma_est*self.decay**self.t, fast_mode=self.fast_mode, **self.patch)
+            return denoise_nl_means(noisy, h=sigma_est*self.sigma_modifier, sigma=sigma_est*self.sigma_modifier, fast_mode=self.fast_mode, **self.patch)
         else:
-            return denoise_nl_means(noisy, h=self.sigma_est*self.decay**self.t, fast_mode=self.fast_mode, **self.patch)
+            return denoise_nl_means(noisy, h=self.denoise_strength*self.decay**self.t, fast_mode=self.fast_mode, **self.patch)
 
 
 ### For documentation, see:

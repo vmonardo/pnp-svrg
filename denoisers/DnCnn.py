@@ -11,16 +11,16 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 class CNNDenoiser(Denoise):
     def __init__(self, decay=1,
-                       sigma_est=40, device='cuda'):
+                       trained_sigma=40, device='cuda'):
         super().__init__()
 
         # Set user defined parameters
         self.decay = decay
-        self.sigma_est = sigma_est
+        self.trained_sigma = trained_sigma
         self.device = device
 
-        self.cnn = Denoiser(net=DnCNN(17), experiment_name='exp_' + str(sigma_est), 
-                            data=False, sigma=sigma_est, batch_size=20).net.to(device)
+        self.cnn = Denoiser(net=DnCNN(17), experiment_name='exp_' + str(trained_sigma), 
+                            data=False, sigma=trained_sigma, batch_size=20).net.to(device)
 
     def denoise(self, noisy):
         self.t += 1

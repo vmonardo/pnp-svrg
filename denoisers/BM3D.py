@@ -8,19 +8,21 @@ from bm3d import bm3d
 
 class BM3DDenoiser(Denoise):
     def __init__(self, decay=1,
-                       sigma_est=0):
+                       denoise_strength=0,
+                       sigma_modifier=1):
         super().__init__()
 
         # Set user defined parameters
         self.decay = decay
-        self.sigma_est = sigma_est
+        self.denoise_strength = denoise_strength
+        self.sigma_modifier = sigma_modifier
 
     def denoise(self, noisy, sigma_est=0):
         self.t += 1
         if sigma_est > 0:
-            return bm3d(noisy, sigma_est)
+            return bm3d(noisy, self.sigma_modifier*sigma_est)
         else:
-            return bm3d(noisy, self.sigma_est*self.decay**self.t)
+            return bm3d(noisy, self.denoise_strength*self.decay**self.t)
         
 
 ### For documentation, see:
