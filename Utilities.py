@@ -15,7 +15,7 @@ def display_results(problem, output_dict, save_results=False, save_dir='figures/
 
     # Display output image
     output_img = output_dict['z'].reshape(problem.H, problem.W)
-    out_fig = plt.figure(figsize=(3,3))
+    out_fig = plt.figure(figsize=(8,8))
     plt.imshow(output_img, cmap=problem.color_map, vmin=0, vmax=1)
     plt.title('Output Image')
     plt.xticks([])

@@ -72,7 +72,7 @@ class Problem():
             os.makedirs(baseFileName, exist_ok=True)
 
         # Display original image
-        orig_fig = plt.figure(figsize=(3,3))
+        orig_fig = plt.figure(figsize=(8,8))
         plt.imshow(self.Xrec, cmap=color_map, vmin=0, vmax=1)
         plt.title('Original Image')
         plt.xticks([])
@@ -84,7 +84,7 @@ class Problem():
             plt.show()
 
         # Display initialization
-        init_fig = plt.figure(figsize=(3,3))
+        init_fig = plt.figure(figsize=(8,8))
         plt.imshow(self.Xinit.reshape(self.H, self.W), cmap=color_map, vmin=0, vmax=1)
         plt.title('Initialization')
         plt.xticks([])
@@ -96,7 +96,7 @@ class Problem():
             plt.show()
 
         if show_measurements:
-            meas_fig = plt.figure(figsize=(3,3))
+            meas_fig = plt.figure(figsize=(8,8))
             plt.imshow(self.Y.reshape(self.lrH, self.lrW), cmap=color_map, vmin=0, vmax=1)
             plt.title('Measurements')
             plt.xticks([])
