@@ -101,9 +101,9 @@ def pnp_saga(problem, denoiser, eta, tt, mini_batch_size, hist_size=50, verbose=
         'algo_name': 'pnp_saga'
     }
 
-def tune_pnp_saga(args, problem, denoiser, tt, hist_size=50, lr_decay=1, verbose=False, converge_check=True, diverge_check=True):
+def tune_pnp_saga(args, problem, denoiser, tt, lr_decay=1, verbose=False, converge_check=True, diverge_check=True):
     from hyperopt import STATUS_OK
-    eta, mini_batch_size, dstrength = args 
+    eta, mini_batch_size, dstrength, hist_size = args 
     denoiser.sigma_est = dstrength
     result = pnp_saga(  eta=eta, 
                         mini_batch_size=mini_batch_size, 
