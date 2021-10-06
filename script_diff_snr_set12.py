@@ -21,34 +21,34 @@ from denoisers import *
 #ALGO_LIST = ['pnp_svrg', 'pnp_gd']
 #DENOISER_LIST = ['NLM', 'TV']
 #PROBLEM_LIST = ['CSMRI', 'DeblurSR', 'PR']
-PROBLEM_LIST = ['CSMRI']
-ALGO_LIST = ['pnp_gd','pnp_sgd', 'pnp_saga', 'pnp_sarah', 'pnp_svrg']
+PROBLEM_LIST = ['PR']
+ALGO_LIST = ['pnp_svrg']
 #DENOISER_LIST = ['NLM', 'BM3D', 'TV']
 DENOISER_LIST = ['BM3D']
-SNR_LIST = [20.]
+SNR_LIST = [10.]
 #SNR_LIST = [0., 5., 10., 15., 20., 25., 30.]
-ALPHA_LIST = [7.]
-SET12_LIST = glob.glob('./data/Set12/*.png')
-#SET12_LIST = ['./data/Set12/01.png']
+ALPHA_LIST = [.5]
+# SET12_LIST = glob.glob('./data/Set12/*.png')
+SET12_LIST = ['./data/Set12/01.png']
 KERNEL = "Minimal"
 
-TIME_PER_TRIAL = 30 
-MAX_EVALS = 10
+TIME_PER_TRIAL = 10 
+MAX_EVALS = 100
 
-eta_min, eta_max = 1e-3, 1
-mb_min, mb_max = 10, 1000
-T2_min, T2_max = 10, 1000
-dstr_min, dstr_max = 0, 1 
-hist_min, hist_max = 50, 100
+eta_min, eta_max = 1e-3, 1e-1
+mb_min, mb_max = 800, 1200 
+T2_min, T2_max = 50, 80
+dstr_min, dstr_max = .8, 1.2 
+hist_min, hist_max = 5, 15
 
 def get_problem(prob_name, im_path, alpha, SNR):
     if prob_name == 'CSMRI':
-        return CSMRI(img_path=im_path, H=256, W=256, sample_prob=alpha/10, snr=SNR)
+        return CSMRI(img_path=im_path, H=256, W=256, sample_prob=alpha, snr=SNR)
     if prob_name == 'DeblurSR':
-        scale = int(alpha*10)
+        scale = int(alpha*100)
         return Deblur(img_path=im_path, kernel=KERNEL, H=256, W=256, scale_percent=scale, snr=SNR)
     if prob_name == 'PR':
-        return PhaseRetrieval(img_path=im_path, H=32, W=32, num_meas = int(alpha*32*32), snr=SNR)
+        return PhaseRetrieval(img_path=im_path, H=128, W=128, num_meas = int(alpha*128*128), snr=SNR)
     else:
         raise Exception('Problem name "{0}" not found'.format(prob_name)) 
 
@@ -86,7 +86,7 @@ def get_proxy_pspace(main_problem, algo_name, denoiser):
                     hp.uniform('eta', eta_min, eta_max),
                     scope.int(quniform('mini_batch_size', mb_min, mb_max, q=1)),
                     hp.uniform('dstrength', dstr_min, dstr_max),
-		    scope.int(quniform('hist_size', hist_min, hist_max, q=1))
+		            scope.int(quniform('hist_size', hist_min, hist_max, q=1))
                 )
         return proxy_fn, psp
     if algo_name == 'pnp_sarah':
@@ -157,7 +157,7 @@ if __name__ == '__main__':
         writer = csv.writer(f, delimiter=',')
         writer.writerow(['Results:'])
         writer.writerow(['Problem','Denoiser','Algorithm','Alpha','SNR','Loss'])
-    for item in result:
-        for row in item:
-            writer.writerow(row)
+        for item in result:
+            for row in item:
+                writer.writerow(row)
     print("Done writing!")

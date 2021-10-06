@@ -63,9 +63,18 @@ class CSMRI(Problem):
         # Compute data fidelity function value at a given point
         return np.linalg.norm(self.Y - self.forward_model(w)) ** 2 / 2 / self.M
 
+    def select_mb(self, size):
+        # Draw measurements uniformly at random for mini-batch stochastic gradient
+        if size > self.M:
+            print('MB size is too big: ', size, ' > ', self.M)
+        batch = np.zeros(self.M)
+        mask_locs = np.asarray(np.flatnonzero(self.mask))
+        batch_locs = np.random.choice(mask_locs, size, replace=False)
+        batch[batch_locs] = 1
+        return batch.reshape(self.H, self.W).astype(int)
+
     def grad_full(self, z):
         # initialize space for residual and compute it
-        res = np.zeros(z.shape, dtype=complex)
         res = (self.forward_model(z) - self.Y)
 
         # return inverse 2D Fourier Transform of residual
@@ -75,7 +84,6 @@ class CSMRI(Problem):
     def grad_stoch(self, z, mb):
         # Get objects as images
         w = z.reshape(self.H,self.W)
-        mb = np.multiply(mb.reshape(self.H, self.W), self.mask)
 
         # Get nonzero indices of the mini-batch
         index = np.nonzero(mb)
@@ -91,6 +99,11 @@ class CSMRI(Problem):
         # return inverse 2D Fourier Transform of residual
         return np.real(np.einsum('ij,ik->jk',tmp,np.conj(F_j))).ravel()
 
+    def npgrad(self, z, mb):
+        w = z.reshape(self.H, self.W)
+        res = np.multiply(np.multiply(self.mask,np.fft.fft2(w)) - self.Y, mb)
+        return np.real(np.fft.ifft2(res)).ravel()
+
 # use this for debugging
 if __name__ == '__main__':
     import sys
@@ -98,28 +111,49 @@ if __name__ == '__main__':
     from denoisers import *
     from algorithms import *
     import time
+    import timeit
 
-    height = 32
-    width = 32
+    height = 128
+    width = 128 
     noise_level = 0.0
 
     # create "ideal" problem
-    p = CSMRI(img_path='../data/Set12/01.png', H=height, W=width, sample_prob=1, snr=10)
-    p.grad_full_check()
-    p.grad_stoch_check()
+    p = CSMRI(img_path='../data/Set12/01.png', H=height, W=width, sample_prob=1., snr=10)
+    # p.grad_full_check()
+    # p.grad_stoch_check()
     p.Xinit = np.random.uniform(0.0, 1.0, p.N) # Try random initialization with the problem
     print(p.snr, p.sigma)
 
-    denoiser = BM3DDenoiser(sigma_modifier=1.0)
+    mb1 = p.select_mb(1)
+    mb2 = np.count_nonzero(p.mask)
+    # index = np.nonzero(mb1)
+
+    print('100 full grads: ', timeit.timeit('p.grad_full(p.Xinit)', number=100, globals=globals()))
+    print('100 stoch grads: ', timeit.timeit('p.grad_stoch(p.Xinit, mb1)', number=100, globals=globals()))
+
+    print('100 grads: ', timeit.timeit('p.npgrad(p.Xinit, mb1)', number=100, globals=globals()))
+    print('100 grads: ', timeit.timeit('p.npgrad(p.Xinit, mb2)', number=100, globals=globals()))
+
+    # F_i = p.F[index[0],:]
+    # F_j = p.F[index[1],:]
+
+    # w = p.Xinit.reshape(p.H, p.W)
+    # print(timeit.timeit('((F_i @ w * F_j).sum(-1) - p.Y[index])', number=10, globals=globals()))
+    # res = ((F_i @ w * F_j).sum(-1) - p.Y[index])
+    # print(timeit.timeit("np.einsum('ij,i->ij',np.conj(F_i),res)", number=10, globals=globals()))
+    # tmp = np.einsum('ij,i->ij',np.conj(F_i),res)
+    # print(timeit.timeit("np.real(np.einsum('ij,ik->jk',tmp,np.conj(F_j))).ravel()", number=10, globals=globals()))
+
+    # denoiser = BM3DDenoiser(sigma_modifier=1.0)
 
 
     # run for a while with super small learning rate and let hyperopt script find correct parameters :)
     # output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=.2, tt=.1, verbose=True, converge_check=True, diverge_check=False)
     # time.sleep(1)
     # output_sgd = pnp_sgd(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=1, verbose=True, converge_check=False, diverge_check=False)
-    time.sleep(1)
-    output_sarah = pnp_sarah(problem=p, denoiser=denoiser, eta=.001, tt=.1, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)
-    time.sleep(1)
+    # time.sleep(1)
+    # output_sarah = pnp_sarah(problem=p, denoiser=denoiser, eta=.001, tt=.1, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)
+    # time.sleep(1)
     # output_saga = pnp_saga(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=2, hist_size=16, verbose=True, converge_check=False, diverge_check=False)
     # time.sleep(1)
     # output_svrg = pnp_svrg(problem=p, denoiser=denoiser, eta=.002, tt=10, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)
