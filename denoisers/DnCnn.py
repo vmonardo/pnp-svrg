@@ -11,20 +11,28 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 class CNNDenoiser(Denoise):
     def __init__(self, decay=1,
-                       trained_sigma=40, device='cuda'):
+                        trained_sigma=40,
+                        device='cuda',
+                        denoise_strength=0,
+                        sigma_modifier=1):
         super().__init__()
 
         # Set user defined parameters
         self.decay = decay
         self.trained_sigma = trained_sigma
         self.device = device
+        self.denoise_strength = denoise_strength
+        self.sigma_modifier = sigma_modifier
 
         self.cnn = Denoiser(net=DnCNN(17), experiment_name='exp_' + str(trained_sigma), 
                             data=False, sigma=trained_sigma, batch_size=20).net.to(device)
 
-    def denoise(self, noisy):
+    def denoise(self, noisy, sigma_est=0):
         self.t += 1
-        return (noisy - (self.decay**self.t)*self.cnn(torch.Tensor(noisy)[None][None].to(self.device)).squeeze().detach().cpu().numpy())
+        if sigma_est > 0:
+            return noisy - (self.sigma_modifier*sigma_est)*self.cnn(torch.Tensor(noisy)[None][None].to(self.device)).squeeze().detach().cpu().numpy()
+        else:
+            return noisy - (self.denoise_strength*self.decay**self.t)*self.cnn(torch.Tensor(noisy)[None][None].to(self.device)).squeeze().detach().cpu().numpy()
 
 ### See cnn.py for more info
 
@@ -51,7 +59,7 @@ if __name__=='__main__':
     fig, ax = plt.subplots()
     im = ax.imshow(test_img[2], cmap='gray')
     fig.colorbar(im, orientation='horizontal')
-    # plt.show()
+    plt.show()
 
     network_type = 'DnCNN'
     denoiser = Denoiser(net=DnCNN(17), 
@@ -64,8 +72,8 @@ if __name__=='__main__':
 
     fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(7,6))
 
-    denoiser.run(num_epochs=20, fig=fig, axes=axes, noisy_img=test_img[0])
+    # denoiser.run(num_epochs=20, fig=fig, axes=axes, noisy_img=test_img[0])
 
     # evaluate performance on test set
 
-    denoiser.evaluate()
+    # denoiser.evaluate()

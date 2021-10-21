@@ -34,7 +34,10 @@ class PhaseRetrieval(Problem):
         self.Y = self.Y0 + noises
 
         self.SNR = self.get_snr_from_sigma
-        self.Xinit = np.random.uniform(0.0, 1.0, self.N) 
+        self.spec_init()
+        self.Xinit = (self.Xinit - self.Xinit.min())/(self.Xinit.max() - self.Xinit.min())
+        # self.Xinit = np.random.uniform(0.0, 1.0, self.N) 
+        # self.Xinit = self.spec_init
         # # self.Y = tmp + noises
         # tmp = self.spec_init()
 
@@ -46,11 +49,19 @@ class PhaseRetrieval(Problem):
 
     def spec_init(self):
         # create data matrix
+        nrm = np.linalg.norm(self.X)
         D = self.A.T.dot(self.A * self.Y[:,None]) / self.M
-        D = (D + D.T) / 2
-        w, v = eigh(D, eigvals=(self.N - 1,self.N - 1))
-        v0 = v/ la.norm(v) 
-        return v0.ravel()
+        m, mold = 1, 2
+        y_final, y_old = 2*np.ones(self.N), np.ones(self.N)
+        tol = 1e-5
+        while (abs(m-mold) > tol and np.linalg.norm(y_final-y_old) > tol):
+            mold = m
+            y_old = y_final
+            y_final = D.dot(y_final)
+            m = np.max(y_final)
+            y_final = y_final / m
+        self.Xinit = np.sqrt(m)*y_final / np.linalg.norm(y_final) * nrm
+
 
     def forward_model(self, w):
         # Y = |Ax|
@@ -83,33 +94,17 @@ if __name__ == '__main__':
     from algorithms import *
     import timeit
 
-    height = 128
-    width = 128
-    alpha = 1       # ratio measurements / dimensions
+    height = 16
+    width = 16
+    alpha = 10       # ratio measurements / dimensions
     noise_level = 0
 
-    p = PhaseRetrieval(img_path='../data/Set12/01.png', H=height, W=width, num_meas = alpha*height*width, sigma=noise_level)
-    mb = p.select_mb(100)
-    print(128*128/100)
+    p = PhaseRetrieval(img_path='../data/Set12/01.png', H=height, W=width, num_meas = int(alpha*height*width), sigma=noise_level)
+    mb = p.select_mb(1)
+
+    print(p.Xinit)
+    print(np.dot(p.Xinit, p.X)**2/np.linalg.norm(p.Xinit)**2 / np.linalg.norm(p.X)**2)
+
     print('1 full grads: ', timeit.timeit('p.grad_full(p.Xinit)', number=1, globals=globals()))
     print('1 stoch grads: ', timeit.timeit('p.grad_stoch(p.Xinit, mb)', number=1, globals=globals()))
 
-    # p.grad_full_check()
-    # p.grad_stoch_check()
-    # p.Xinit = np.random.uniform(0.0, 1.0, p.N) # Try random initialization with the problem
-    # print(p.Xinit.min(), p.Xinit.max())
-    # print(p.Xinit)
-    # print(np.dot(p.Xinit, p.X)**2/np.linalg.norm(p.Xinit)**2 / np.linalg.norm(p.X)**2)
-
-    # denoiser = BM3DDenoiser()
-
-    # # run for a while with super small learning rate and let hyperopt script find correct parameters :)
-    # output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=.2, tt=.1, verbose=True, converge_check=True, diverge_check=False)
-    # time.sleep(1)
-    # output_sgd = pnp_sgd(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=100, verbose=True, converge_check=False, diverge_check=False)
-    # time.sleep(1)
-    # output_sarah = pnp_sarah(problem=p, denoiser=denoiser, eta=.001, tt=10, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)
-    # time.sleep(1)
-    # output_saga = pnp_saga(problem=p, denoiser=denoiser, eta=.001, tt=10, mini_batch_size=2, hist_size=4, verbose=True, converge_check=False, diverge_check=False)
-    # time.sleep(1)
-    # output_svrg = pnp_svrg(problem=p, denoiser=denoiser, eta=.002, tt=10, T2=8, mini_batch_size=2, verbose=True, converge_check=False, diverge_check=False)

@@ -15,7 +15,7 @@ def display_results(problem, output_dict, save_results=False, save_dir='figures/
 
     # Display output image
     output_img = output_dict['z'].reshape(problem.H, problem.W)
-    out_fig = plt.figure(figsize=(8,8))
+    out_fig = plt.figure(figsize=(6,6))
     plt.imshow(output_img, cmap=problem.color_map, vmin=0, vmax=1)
     plt.title('Output Image')
     plt.xticks([])
@@ -27,7 +27,7 @@ def display_results(problem, output_dict, save_results=False, save_dir='figures/
         plt.show()
 
     # Plot time vs PSNR
-    psnr_fig = plt.figure(figsize=(8,8))
+    psnr_fig = plt.figure(figsize=(6,6))
     psnr_ax = psnr_fig.add_subplot(1,1,1)
         
     tArray = output_dict['time_per_iter']

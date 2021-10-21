@@ -8,8 +8,6 @@ except:
     from cnn.cnn import Denoiser, DnCNN
 import torch
 import torch.nn as nn
-import argparse
-import json
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
@@ -123,7 +121,7 @@ class MMODenoiser(Denoise):
         else:
             self.network = model
 
-    def denoise(self, noisy):
+    def denoise(self, noisy, sigma_est=0):
         self.t += 1
         noisy = np.moveaxis(noisy, -1, 0)
         tmp = apply_model(noisy, model=self.network)
@@ -131,9 +129,9 @@ class MMODenoiser(Denoise):
 
 if __name__ == '__main__':
     architecture='DnCNN_nobn' 
-    n_ch=3
+    n_ch=1
     n_lev=0.01 
-    noise_level_den=0.007
+    noise_level_den=0.009
     H, W = 128, 128
     cuda = True if torch.cuda.is_available() else False
     Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
@@ -142,8 +140,8 @@ if __name__ == '__main__':
     denoiser = MMODenoiser(channels=n_ch, cuda=cuda, sigma=noise_level_den, root_path='./')
 
     # image_path = './BSDS300/images/test/3096.jpg'
-    # image_path='../data/Set12/01.png'
-    image_path = '../data/RGB/8023.jpg'
+    image_path='../data/Set12/01.png'
+    # image_path = '../data/RGB/8023.jpg'
     image_true = Image.open(image_path).resize((H, W))
     image_true = np.asarray(image_true, dtype="float32")/255.
 
