@@ -74,30 +74,40 @@ class CSMRI(Problem):
         return batch.reshape(self.H, self.W).astype(int)
 
     def grad_full(self, z):
-        # initialize space for residual and compute it
-        res = (self.forward_model(z) - self.Y)
+        tmp = np.fft.fft2(z.reshape(self.H, self.W))
+        res = tmp * self.mask
+        index = np.nonzero(self.mask)
+        res[index] = res[index] - self.Y[index]
+        return np.real(np.fft.ifft2(res)).ravel() 
+        # # initialize space for residual and compute it
+        # res = (self.forward_model(z) - self.Y)
 
-        # return inverse 2D Fourier Transform of residual
-        # tmp = np.real(np.fft.ifft2(res))
-        return np.real(np.conj(self.F).dot(res).dot(np.conj(self.F.T))).ravel() / self.M
+        # # return inverse 2D Fourier Transform of residual
+        # # tmp = np.real(np.fft.ifft2(res))
+        # return np.real(np.conj(self.F).dot(res).dot(np.conj(self.F.T))).ravel() / self.M
 
     def grad_stoch(self, z, mb):
-        # Get objects as images
-        w = z.reshape(self.H,self.W)
+        tmp = self.mask * mb
+        res = np.fft.fft2(z.reshape(self.H, self.W)) * tmp
+        index = np.nonzero(tmp)
+        res[index] = res[index] - self.Y[index]
+        return np.real(np.fft.ifft2(res)).ravel()
+        # # Get objects as images
+        # w = z.reshape(self.H,self.W)
 
-        # Get nonzero indices of the mini-batch
-        index = np.nonzero(mb)
+        # # Get nonzero indices of the mini-batch
+        # index = np.nonzero(mb)
 
-        # Get relevant rows of DFT matrix
-        F_i = self.F[index[0],:]
-        F_j = self.F[index[1],:]
+        # # Get relevant rows of DFT matrix
+        # F_i = self.F[index[0],:]
+        # F_j = self.F[index[1],:]
 
-        # compute residual
-        res = ((F_i @ w * F_j).sum(-1) - self.Y[index])  # get residual in as a column vector
-        tmp = np.einsum('ij,i->ij',np.conj(F_i),res)
+        # # compute residual
+        # res = ((F_i @ w * F_j).sum(-1) - self.Y[index])  # get residual in as a column vector
+        # tmp = np.einsum('ij,i->ij',np.conj(F_i),res)
 
-        # return inverse 2D Fourier Transform of residual
-        return np.real(np.einsum('ij,ik->jk',tmp,np.conj(F_j))).ravel()
+        # # return inverse 2D Fourier Transform of residual
+        # return np.real(np.einsum('ij,ik->jk',tmp,np.conj(F_j))).ravel()
 
     def npgrad(self, z, mb):
         w = z.reshape(self.H, self.W)
