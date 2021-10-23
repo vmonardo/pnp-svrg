@@ -24,7 +24,7 @@ class RealSN_DnCNNDenoiser(Denoise):
         # the reason for the following scaling:
         # our denoisers are trained with "normalized images + noise"
         # so the scale should be 1 + O(sigma)
-        scale_range = 1.0 + sigma_est/255.0/2.0
+        scale_range = 1.0 + self.sigma/255.0/2.0
         scale_shift = (1 - scale_range) / 2.0
         xtilde = xtilde * scale_range + scale_shift
 

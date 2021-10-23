@@ -18,6 +18,8 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
     i = 0
 
     elapsed = time.time()
+    time_per_iter.append(time.time() - elapsed)
+    psnr_per_iter.append(problem.PSNR(z))
 
     # outer loop
     break_out_flag = False
@@ -48,7 +50,8 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
 
             # calculate stochastic variance-reduced gradient (SVRG)
             mini_batch = problem.select_mb(mini_batch_size)
-            v = (problem.grad_stoch(z, mini_batch) - problem.grad_stoch(w, mini_batch)) / mini_batch_size + mu
+            # v = (problem.grad_stoch(z, mini_batch) - problem.grad_stoch(w, mini_batch)) / mini_batch_size + mu
+            v = mu
 
             # Gradient update
             z -= (eta*lr_decay**i)*v
@@ -98,7 +101,7 @@ def pnp_svrg(problem, denoiser, eta, tt, T2, mini_batch_size, verbose=True, lr_d
         'psnr_per_iter': psnr_per_iter,
         'gradient_time': gradient_time,
         'denoise_time': denoise_time,
-        'algo_name': 'pnp_svrg'
+        'algo_name': 'PnP SVRG'
     }
 
 def tune_pnp_svrg(args, problem, denoiser, tt, lr_decay=1, verbose=False, converge_check=True, diverge_check=True):

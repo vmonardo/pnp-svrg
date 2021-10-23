@@ -78,40 +78,14 @@ class CSMRI(Problem):
         res = tmp * self.mask
         index = np.nonzero(self.mask)
         res[index] = res[index] - self.Y[index]
-        return np.real(np.fft.ifft2(res)).ravel() 
-        # # initialize space for residual and compute it
-        # res = (self.forward_model(z) - self.Y)
-
-        # # return inverse 2D Fourier Transform of residual
-        # # tmp = np.real(np.fft.ifft2(res))
-        # return np.real(np.conj(self.F).dot(res).dot(np.conj(self.F.T))).ravel() / self.M
+        return np.real(np.fft.ifft2(res)).ravel() / self.M0
 
     def grad_stoch(self, z, mb):
-        tmp = self.mask * mb
-        res = np.fft.fft2(z.reshape(self.H, self.W)) * tmp
-        index = np.nonzero(tmp)
+        mbb = self.mask * mb
+        tmp = np.fft.fft2(z.reshape(self.H, self.W))
+        res = tmp * mbb
+        index = np.nonzero(mbb)
         res[index] = res[index] - self.Y[index]
-        return np.real(np.fft.ifft2(res)).ravel()
-        # # Get objects as images
-        # w = z.reshape(self.H,self.W)
-
-        # # Get nonzero indices of the mini-batch
-        # index = np.nonzero(mb)
-
-        # # Get relevant rows of DFT matrix
-        # F_i = self.F[index[0],:]
-        # F_j = self.F[index[1],:]
-
-        # # compute residual
-        # res = ((F_i @ w * F_j).sum(-1) - self.Y[index])  # get residual in as a column vector
-        # tmp = np.einsum('ij,i->ij',np.conj(F_i),res)
-
-        # # return inverse 2D Fourier Transform of residual
-        # return np.real(np.einsum('ij,ik->jk',tmp,np.conj(F_j))).ravel()
-
-    def npgrad(self, z, mb):
-        w = z.reshape(self.H, self.W)
-        res = np.multiply(np.multiply(self.mask,np.fft.fft2(w)) - self.Y, mb)
         return np.real(np.fft.ifft2(res)).ravel()
 
 # use this for debugging
@@ -140,22 +114,6 @@ if __name__ == '__main__':
 
     print('100 full grads: ', timeit.timeit('p.grad_full(p.Xinit)', number=100, globals=globals()))
     print('100 stoch grads: ', timeit.timeit('p.grad_stoch(p.Xinit, mb1)', number=100, globals=globals()))
-
-    print('100 grads: ', timeit.timeit('p.npgrad(p.Xinit, mb1)', number=100, globals=globals()))
-    print('100 grads: ', timeit.timeit('p.npgrad(p.Xinit, mb2)', number=100, globals=globals()))
-
-    # F_i = p.F[index[0],:]
-    # F_j = p.F[index[1],:]
-
-    # w = p.Xinit.reshape(p.H, p.W)
-    # print(timeit.timeit('((F_i @ w * F_j).sum(-1) - p.Y[index])', number=10, globals=globals()))
-    # res = ((F_i @ w * F_j).sum(-1) - p.Y[index])
-    # print(timeit.timeit("np.einsum('ij,i->ij',np.conj(F_i),res)", number=10, globals=globals()))
-    # tmp = np.einsum('ij,i->ij',np.conj(F_i),res)
-    # print(timeit.timeit("np.real(np.einsum('ij,ik->jk',tmp,np.conj(F_j))).ravel()", number=10, globals=globals()))
-
-    # denoiser = BM3DDenoiser(sigma_modifier=1.0)
-
 
     # run for a while with super small learning rate and let hyperopt script find correct parameters :)
     # output_gd = pnp_gd(problem=p, denoiser=denoiser, eta=.2, tt=.1, verbose=True, converge_check=True, diverge_check=False)

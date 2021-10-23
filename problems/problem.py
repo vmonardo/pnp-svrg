@@ -32,7 +32,7 @@ class Problem():
 
     def PSNR(self, w):
         # return PSNR w.r.t. ground truth image
-        return peak_signal_noise_ratio(self.Xrec, w.reshape(self.H, self.W))
+        return np.around(peak_signal_noise_ratio(self.Xrec, w.reshape(self.H, self.W)), decimals=2)
 
     def set_snr_sigma(self):
         if self.snr is not None and self.sigma is None:

@@ -18,6 +18,8 @@ def pnp_gd(problem, denoiser, eta, tt, verbose=True, lr_decay=1, converge_check=
     i = 0
 
     elapsed = time.time()
+    time_per_iter.append(time.time() - elapsed)
+    psnr_per_iter.append(problem.PSNR(z))
 
     while (time.time() - elapsed) < tt:
         # start PSNR track
@@ -52,7 +54,8 @@ def pnp_gd(problem, denoiser, eta, tt, verbose=True, lr_decay=1, converge_check=
         denoise_time += denoise_end_time
 
         # Logging
-        time_per_iter.append(grad_end_time + denoise_end_time)
+        # time_per_iter.append(grad_end_time + denoise_end_time)
+        time_per_iter.append(time.time() - grad_start_time)
         psnr_per_iter.append(problem.PSNR(z0))
 
         z = np.copy(z0).ravel()
@@ -77,7 +80,7 @@ def pnp_gd(problem, denoiser, eta, tt, verbose=True, lr_decay=1, converge_check=
         'psnr_per_iter': psnr_per_iter,
         'gradient_time': gradient_time,
         'denoise_time': denoise_time,
-        'algo_name': 'pnp_gd'
+        'algo_name': 'PnP GD'
     }
 
 def tune_pnp_gd(args, problem, denoiser, tt, lr_decay=1, verbose=False, converge_check=True, diverge_check=True):

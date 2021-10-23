@@ -18,6 +18,8 @@ def pnp_sgd(problem, denoiser, eta, tt, mini_batch_size, verbose=True, lr_decay=
     i = 0
 
     elapsed = time.time()
+    time_per_iter.append(time.time() - elapsed)
+    psnr_per_iter.append(problem.PSNR(z))
 
     while (time.time() - elapsed) < tt:
         # start PSNR track
@@ -78,7 +80,7 @@ def pnp_sgd(problem, denoiser, eta, tt, mini_batch_size, verbose=True, lr_decay=
         'psnr_per_iter': psnr_per_iter,
         'gradient_time': gradient_time,
         'denoise_time': denoise_time,
-        'algo_name': 'pnp_sgd'
+        'algo_name': 'PnP SGD'
     }
 
 def tune_pnp_sgd(args, problem, denoiser, tt, lr_decay=1, verbose=False, converge_check=True, diverge_check=True):
